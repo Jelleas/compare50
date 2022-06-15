@@ -1,4 +1,59 @@
-import {useState, useMemo, useRef} from 'react';
+import {useState, useMemo, useRef, useReducer} from 'react';
+
+function initRegionMap(match, pass) {
+    const fileIdsInOrder = match.filesA().concat(match.filesB()).map(file => file.id);
+
+    const spans = (pass.spans
+        .filter(span => !span.ignored)
+        .map(span => {
+            const groupId = pass.groups.find(group => group.spans.includes(span.id)).id;
+            return new Span(span.id, span.subId, span.fileId, groupId, span.start, span.end);
+        })
+        .sort((a, b) => {
+            const indexA = fileIdsInOrder.indexOf(a.fileId);
+            const indexB = fileIdsInOrder.indexOf(b.fileId);
+    
+            if (indexA !== indexB) {
+                return indexA > indexB ? 1 : -1;
+            }
+    
+            return a.start > b.start ? 1 : -1;
+        })
+    );
+
+    return new RegionMap(spans);
+}
+
+function initIgnoredRegionMap(pass) {
+    const ignoredSpans = (pass.spans
+        .filter(span => span.ignored)
+        .map(span => new Span(span.id, span.subId, span.fileId, null, span.start, span.end, span.ignored))
+    );
+
+    return new RegionMap(ignoredSpans);
+}
+
+function initSpanStates(regionMap) {
+    return regionMap.spans.reduce((acc, span) => {
+        acc[span.id] = Span.STATES.INACTIVE;
+        return acc;
+    }, {});
+}
+
+// function useRegions() {
+//     const reduce = (state, action) => {
+//         switch(state) {
+//             case 'activate':
+//                 return activate(state, action.value);
+//             case 'select':
+//                 return select(state, action.value);
+//             case 'reset':
+//                 return reset(state);
+//             default:
+//                 throw new Error(`unknown action type ${action.type}`);
+//         }
+//     }
+// }
 
 /*
  * A SpanManager that manages the state of spans (parts of a file that compare50 identifies).
@@ -317,41 +372,6 @@ class Span {
 
 
 function useSpanManager(pass, match) {
-    const initSpans = () => {
-        const spans = [];
-        pass.spans.forEach(span => {
-            if (!span.ignored) {
-                const groupId = pass.groups.find(group => group.spans.includes(span.id)).id;
-                spans.push(new Span(span.id, span.subId, span.fileId, groupId, span.start, span.end));
-            }
-        });
-
-        const fileIdsInOrder = match.filesA().map(file => file.id).concat(match.filesB().map(file => file.id));
-
-        return spans.sort((a, b) => {
-            const indexA = fileIdsInOrder.indexOf(a.fileId);
-            const indexB = fileIdsInOrder.indexOf(b.fileId);
-
-            if (indexA !== indexB) {
-                return indexA > indexB ? 1 : -1;
-            }
-
-            return a.start > b.start ? 1 : -1;
-        });
-    }
-
-    const initIgnoredSpans = () =>
-        pass.spans.filter(span => span.ignored).map(span => new Span(span.id, span.subId, span.fileId, null, span.start, span.end, span.ignored));
-
-    const initSpanStates = () => {
-        const spanStates = spans.reduce((acc, span) => {
-            acc[span.id] = Span.STATES.INACTIVE;
-            return acc;
-        }, {});
-
-        return spanStates;
-    }
-
     const unselectSpanStates = spanStates => {
         Object.keys(spanStates).forEach(spanId => {
             if (spanStates[spanId] === Span.STATES.SELECTED || spanStates[spanId] === Span.STATES.HIGHLIGHTED) {
@@ -362,13 +382,10 @@ function useSpanManager(pass, match) {
     }
 
     // Memoize the (expensive) mapping from regions to spans on the selected pass
-    const spans = useMemo(initSpans, [pass.name]);
-
-    const regionMap = useMemo(() => new RegionMap(spans), [spans]);
+    const regionMap = useMemo(() => initRegionMap(match, pass), [pass.name]);
 
     // Memoize the (expensive) mapping from regions to ignoredSpans on the selected pass
-    const ignoredSpans = useMemo(initIgnoredSpans, [pass.name]);
-    const ignoredRegionMap = useMemo(() => new RegionMap(ignoredSpans), [spans]);
+    const ignoredRegionMap = useMemo(() => initIgnoredRegionMap(pass), [pass.name]);
 
     // A map from pass.name => span.id => state
     const [allSpanStates, setAllSpanStates] = useState({});
@@ -379,7 +396,7 @@ function useSpanManager(pass, match) {
     // Retrieve the spanStates from the map, otherwise create new
     let spanStates = allSpanStates[pass.name]
     if (spanStates === undefined) {
-        spanStates = initSpanStates();
+        spanStates = initSpanStates(regionMap);
     }
 
     // In case pass changed, unselect everything in the new pass
