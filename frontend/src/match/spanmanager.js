@@ -1,6 +1,10 @@
 import {useState, useMemo, useRef, useReducer} from 'react';
 
 function initRegionMap(match, pass) {
+    if (match == null || pass == null) {
+        return new RegionMap([]);
+    }
+
     const fileIdsInOrder = match.filesA().concat(match.filesB()).map(file => file.id);
 
     const spans = (pass.spans
@@ -25,6 +29,10 @@ function initRegionMap(match, pass) {
 }
 
 function initIgnoredRegionMap(pass) {
+    if (pass == null) {
+        return new RegionMap([]);
+    }
+
     const ignoredSpans = (pass.spans
         .filter(span => span.ignored)
         .map(span => new Span(span.id, span.subId, span.fileId, null, span.start, span.end, span.ignored))
@@ -40,20 +48,43 @@ function initSpanStates(regionMap) {
     }, {});
 }
 
-// function useRegions() {
-//     const reduce = (state, action) => {
-//         switch(state) {
-//             case 'activate':
-//                 return activate(state, action.value);
-//             case 'select':
-//                 return select(state, action.value);
-//             case 'reset':
-//                 return reset(state);
-//             default:
-//                 throw new Error(`unknown action type ${action.type}`);
-//         }
-//     }
-// }
+function useRegions() {
+    const reduce = (state, action) => {
+        switch(action.type) {
+            case 'set':
+                const {match, pass} = action.value;
+                const regionMap = initRegionMap(match, pass);
+                const ignoredRegionMap = initIgnoredRegionMap(pass);
+                const spanStates = initSpanStates(regionMap);
+                return {
+                    pass: pass,
+                    match: match,
+                    regionMap: regionMap,
+                    ignoredRegionMap: ignoredRegionMap,
+                    spanStates: spanStates
+                }
+            // case 'activate':
+            //     return activate(state, action.value);
+            // case 'select':
+            //     return select(state, action.value);
+            // case 'reset':
+            //     return reset(state);
+            default:
+                throw new Error(`unknown action type ${action.type}`);
+        }
+    }
+
+
+    const [regions, dispatch] = useReducer(reduce, {
+        pass: null,
+        match: null,
+        regionMap: initRegionMap(),
+        ignoredRegionMap: initIgnoredRegionMap(),
+        spanStates: []
+    });
+
+    return [new SpanManager(regions.regionMap, regions.ignoredRegionMap, regions.spanStates, () => null), dispatch];
+}
 
 /*
  * A SpanManager that manages the state of spans (parts of a file that compare50 identifies).
@@ -416,5 +447,5 @@ function useSpanManager(pass, match) {
 }
 
 
-export {Span}
+export {Span, useRegions}
 export default useSpanManager

@@ -5,15 +5,15 @@ import SideBar from './sidebar';
 import SplitView from './code/splitview';
 
 import API from '../api';
-import useSpanManager from './spanmanager';
+import useSpanManager, {useRegions} from './spanmanager';
 
 function useMatchData() {
     const reduce = (state, action) => {
         switch(action.type) {
-            case 'newMatch':
-                const match = action.value;
+            case 'new':
+                const {match, pass} = action.value;
                 return {
-                    "currentPass": match.passes[0],
+                    "currentPass": pass,
                     "match": match,
                     "passes": match.passes,
                     "isLoaded": true,
@@ -76,7 +76,10 @@ function MatchView() {
         ])
         .then(([match, graph]) => {
             setGraph(graph);
-            dispatchMatchData({type: 'newMatch', value: match});
+            const pass = match.passes[0];
+            console.log(pass)
+            dispatchMatchData({type: 'new', value: {match: match, pass: pass}});
+            dispatchRegions({type: 'set', value: {match: match, pass: pass}});
         });
     }
 
@@ -86,7 +89,9 @@ function MatchView() {
 
     const [graphData, setGraph] = useState({});
 
-    const spanManager = useSpanManager(matchData.currentPass, matchData.match);
+    // const spanManager = useSpanManager(matchData.currentPass, matchData.match);
+
+    const [spanManager, dispatchRegions] = useRegions();
 
     if (matchData.isLoaded === false) {
         getData();
