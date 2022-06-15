@@ -7,35 +7,32 @@ import SplitView from './code/splitview';
 import API from '../api';
 import useSpanManager from './spanmanager';
 
-function useSettings() {
+function useMatchData() {
     const reduce = (state, action) => {
         switch(action.type) {
             case 'newMatch':
                 const match = action.value;
                 return {
-                    ...state,
-                    "passes": match.passes,
                     "currentPass": match.passes[0],
-                    "isDataLoaded": true,
+                    "match": match,
+                    "passes": match.passes,
+                    "isLoaded": true,
                     "currentMatch": match.index(),
                     "nMatches": match.numberOfMatches()
-                }
+                };
             case 'load':
-                return {
-                    ...state,
-                    "isDataLoaded": null
-                }
-            case 'newSetting':
-                return {
-                    ...state,
-                    ...action.value
-                }
+                return {...state, "isLoaded": null};
+            case 'setPass':
+                return {...state, "currentPass": action.value};
+            case 'setGroup':
+                return {...state, "currentGroup": action.value};
             default:
                 throw new Error(`unknown action type ${action.type}`);
         }
     }
 
-    const [settings, dispatch] = useReducer(reduce, {
+    const [matchData, dispatch] = useReducer(reduce, {
+        "match": API.placeHolderMatch(),
         "currentPass": {
             "name": "",
             "docs": "",
@@ -46,19 +43,32 @@ function useSettings() {
         "passes": [],
         "nMatches": 50,
         "currentMatch": 1,
+        "isLoaded": false
+    })
+
+    return [matchData, dispatch];
+}
+
+function useSettings() {
+    const [settings, setSettings] = useState({
         "isSoftWrapped": true,
         "isWhiteSpaceHidden": true,
-        "isIgnoredHidden": false,
-        "isDataLoaded": false
+        "isIgnoredHidden": false
     });
 
-    return [settings, dispatch]
+    const setSetting = (key, value) => setSettings(settings => {
+        const newSettings = {...settings}
+        newSettings[key] = value;
+        setSettings(newSettings);
+    })
+
+    return [settings, setSetting];
 }
 
 
 function MatchView() {
     const getData = function() {
-        dispatchSettings({type: 'load'})
+        dispatchMatchData({type: 'load'})
 
         Promise.all([
             API.getMatch(),
@@ -66,34 +76,43 @@ function MatchView() {
         ])
         .then(([match, graph]) => {
             setGraph(graph);
-            setMatch(match);
-            dispatchSettings({type: 'newMatch', value: match});
+            dispatchMatchData({type: 'newMatch', value: match});
         });
     }
 
-    const [settings, dispatchSettings] = useSettings()
+    const [settings, setSetting] = useSettings();
 
-    const [match, setMatch] = useState(API.placeHolderMatch());
+    const [matchData, dispatchMatchData] = useMatchData();
 
     const [graphData, setGraph] = useState({});
 
-    if (settings.isDataLoaded === false) {
+    const spanManager = useSpanManager(matchData.currentPass, matchData.match);
+
+    if (matchData.isLoaded === false) {
         getData();
     }
-
-    const spanManager = useSpanManager(settings.currentPass, match);
 
     return (
         <div className="row-box" style={{"height":"100vh"}}>
             <div className="row auto" style={{"width":"9em"}}>
                 <div className="column-box" style={{"borderRight": "1px solid #a7adba"}}>
                     <div className="row fill">
-                        <SideBar settings={settings} dispatchSettings={dispatchSettings} match={match} spanManager={spanManager} graphData={graphData}/>
+                        <SideBar 
+                            settings={settings}
+                            setSetting={setSetting}
+                            matchData={matchData}
+                            dispatchMatchData={dispatchMatchData}
+                            spanManager={spanManager}
+                            graphData={graphData}/>
                     </div>
                 </div>
             </div>
             <div className="row fill">
-                <SplitView topHeight="2.5em" settings={settings} match={match} spanManager={spanManager}/>
+                <SplitView 
+                    settings={settings} 
+                    matchData={matchData} 
+                    spanManager={spanManager}
+                    topHeight="2.5em"/>
             </div>
         </div>
     );

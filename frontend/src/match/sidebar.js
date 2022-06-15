@@ -9,7 +9,7 @@ import './matchview.css';
 import './sidebar.css';
 
 
-function SideBar({settings, dispatchSettings, match, spanManager, graphData}) {
+function SideBar({settings, setSetting, matchData, dispatchMatchData, spanManager, graphData}) {
     const style = {
         "margin": "auto",
         "marginBottom": ".5em",
@@ -26,43 +26,43 @@ function SideBar({settings, dispatchSettings, match, spanManager, graphData}) {
                 </div>
                 <div className="row auto" style={style}>
                     <MatchNavigation
-                        current={settings.currentMatch}
-                        n={settings.nMatches}
+                        current={matchData.currentMatch}
+                        n={matchData.nMatches}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <PassNavigation
-                        passes={settings.passes}
-                        currentPass={settings.currentPass}
-                        setPass={pass => dispatchSettings({type: "newSetting", value: {currentPass: pass}})}
+                        passes={matchData.passes}
+                        currentPass={matchData.currentPass}
+                        setPass={pass => dispatchMatchData({type: "setPass", value: pass})}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <GroupNavigation
                         spanManager={spanManager}
-                        setGroup={group => dispatchSettings({type: "newSetting", value: {"currentGroup": group}})}
+                        setGroup={group => dispatchMatchData({type: "setGroup", value: group})}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <ConfigMenu
                         softWrap={settings.isSoftWrapped}
-                        setSoftWrap={softWrap => dispatchSettings({type: "newSetting", value: {"isSoftWrapped": softWrap}})}
+                        setSoftWrap={softWrap => setSetting("isSoftWrapped", softWrap)}
                         hideIgnored={settings.isIgnoredHidden}
-                        setHideIgnored={hideIgnored => dispatchSettings({type: "newSetting", value: {"isIgnoredHidden": hideIgnored}})}
+                        setHideIgnored={hideIgnored => setSetting("isIgnoredHidden", hideIgnored)}
                         showWhiteSpace={!settings.isWhiteSpaceHidden}
-                        setShowWhiteSpace={showWhiteSpace => dispatchSettings({type: "newSetting", value: {"isWhiteSpaceHidden": !showWhiteSpace}})}
+                        setShowWhiteSpace={showWhiteSpace => setSetting("isWhiteSpaceHidden", !showWhiteSpace)}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <ExportMenu
-                        match={match}
+                        match={matchData.match}
                     />
                 </div>
                 {settings.isDataLoaded && 
                     <SideGraph 
                         graph={graphData}
-                        subAId={match.subA.id}
-                        subBId={match.subB.id}
+                        subAId={matchData.match.subA.id}
+                        subBId={matchData.match.subB.id}
                     />
                 }
             </div>

@@ -7,8 +7,9 @@ import '../matchview.css';
 import '../../split.css';
 
 
-function SplitView({settings, match, spanManager, topHeight}) {
+function SplitView({settings, matchData, spanManager, topHeight}) {
     const [interactionBlocked, setInteractionBlocked] = useState(false);
+    const match = matchData.match;
 
     return (
         <Split
