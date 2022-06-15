@@ -7,7 +7,7 @@ import '../matchview.css';
 import '../../split.css';
 
 
-function SplitView(props) {
+function SplitView({settings, match, spanManager, topHeight}) {
     const [interactionBlocked, setInteractionBlocked] = useState(false);
 
     return (
@@ -23,17 +23,16 @@ function SplitView(props) {
                 "height":"100%"
             }}
         >
-            {[[props.match.filesA(), props.match.subA], [props.match.filesB(), props.match.subB]].map(([files, sub], i) =>
+            {[[match.filesA(), match.subA], [match.filesB(), match.subB]].map(([files, sub], i) =>
                 <div key={`side_${i}`} style={{"height":"100%", "margin":0, "float":"left"}}>
                     <Side
-                        pass={props.pass}
                         submission={sub}
                         files={files}
-                        interactionBlocked={interactionBlocked}
+                        isInteractionBlocked={interactionBlocked}
                         setInteractionBlocked={setInteractionBlocked}
-                        spanManager={props.spanManager}
-                        globalState={props.globalState}
-                        topHeight={props.topHeight}
+                        spanManager={spanManager}
+                        settings={settings}
+                        topHeight={topHeight}
                     />
                 </div>
             )}
@@ -42,7 +41,7 @@ function SplitView(props) {
 }
 
 
-function Side(props) {
+function Side({submission, files, isInteractionBlocked, setIsInteractionBlocked, spanManager, settings, topHeight}) {
     const [fileInView, updateFileVisibility] = useMax();
 
     const [fileCoverages, setFileCoverages] = useState({});
@@ -53,37 +52,34 @@ function Side(props) {
 
     const ref = useRef(null);
 
-    const scrollToCallback = useScroll(ref, props.spanManager, props.setInteractionBlocked);
+    const scrollToCallback = useScroll(ref, spanManager, setIsInteractionBlocked);
 
     return (
         <div className="column-box">
-            <div className="row auto" style={{
-                "height":props.height,
-                "lineHeight":props.height
-            }}>
+            <div className="row auto">
                 <StatusBar
-                    filepath={props.submission.name}
+                    filepath={submission.name}
                     percentage={submissionPercentage}
                     file={fileInView}
-                    height={props.topHeight}/>
+                    height={topHeight}/>
             </div>
             <div ref={ref} className="scrollable-side row fill" style={{"overflow":"scroll"}}>
                 <div style={{"paddingLeft":".5em"}}>
-                    {props.files.map((file, i) =>
+                    {files.map((file, i) =>
                         <File
                             key={file.name}
                             file={file}
-                            spanManager={props.spanManager}
-                            softWrap={props.globalState.softWrap}
-                            hideIgnored={props.globalState.hideIgnored}
-                            showWhiteSpace={props.globalState.showWhiteSpace}
+                            spanManager={spanManager}
+                            softWrap={settings.isSoftWrapped}
+                            hideIgnored={settings.isIgnoredHidden}
+                            showWhiteSpace={!settings.isWhiteSpaceHidden}
                             updateFileVisibility={updateFileVisibility}
                             updateCoverage={(coverage) => {
                                 fileCoverages[file.id] = coverage;
                                 setFileCoverages(fileCoverages);
                             }}
                             scrollTo={scrollToCallback}
-                            interactionBlocked={props.interactionBlocked}
+                            interactionBlocked={isInteractionBlocked}
                         />
                     )}
                     <div style={{"height":"75vh"}}></div>

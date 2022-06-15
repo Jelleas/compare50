@@ -9,7 +9,7 @@ import './matchview.css';
 import './sidebar.css';
 
 
-function SideBar(props) {
+function SideBar({settings, dispatchSettings, match, spanManager, graphData}) {
     const style = {
         "margin": "auto",
         "marginBottom": ".5em",
@@ -17,8 +17,6 @@ function SideBar(props) {
         "width": "90%"
     }
 
-    const updateGlobalState = newState => props.setGlobalState({...props.globalState, ...newState})
-    
     return (
         <React.Fragment>
             <ReactTooltip place="right" type="dark" effect="solid" id="sidebar-tooltip"/>
@@ -28,44 +26,43 @@ function SideBar(props) {
                 </div>
                 <div className="row auto" style={style}>
                     <MatchNavigation
-                        current={props.globalState.currentMatch}
-                        n={props.globalState.nMatches}
-                        setMatch={match => updateGlobalState({"currentMatch": match})}
+                        current={settings.currentMatch}
+                        n={settings.nMatches}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <PassNavigation
-                        passes={props.globalState.passes}
-                        currentPass={props.globalState.currentPass}
-                        setPass={pass => updateGlobalState({"currentPass": pass})}
+                        passes={settings.passes}
+                        currentPass={settings.currentPass}
+                        setPass={pass => dispatchSettings({type: "newSetting", value: {currentPass: pass}})}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <GroupNavigation
-                        spanManager={props.spanManager}
-                        setGroup={group => updateGlobalState({"currentGroup": group})}
+                        spanManager={spanManager}
+                        setGroup={group => dispatchSettings({type: "newSetting", value: {"currentGroup": group}})}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <ConfigMenu
-                        softWrap={props.globalState.softWrap}
-                        setSoftWrap={softWrap => updateGlobalState({"softWrap": softWrap})}
-                        hideIgnored={props.globalState.hideIgnored}
-                        setHideIgnored={hideIgnored => updateGlobalState({"hideIgnored": hideIgnored})}
-                        showWhiteSpace={props.globalState.showWhiteSpace}
-                        setShowWhiteSpace={showWhiteSpace => updateGlobalState({"showWhiteSpace": showWhiteSpace})}
+                        softWrap={settings.isSoftWrapped}
+                        setSoftWrap={softWrap => dispatchSettings({type: "newSetting", value: {"isSoftWrapped": softWrap}})}
+                        hideIgnored={settings.isIgnoredHidden}
+                        setHideIgnored={hideIgnored => dispatchSettings({type: "newSetting", value: {"isIgnoredHidden": hideIgnored}})}
+                        showWhiteSpace={!settings.isWhiteSpaceHidden}
+                        setShowWhiteSpace={showWhiteSpace => dispatchSettings({type: "newSetting", value: {"isWhiteSpaceHidden": !showWhiteSpace}})}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <ExportMenu
-                        match={props.match}
+                        match={match}
                     />
                 </div>
-                {props.globalState.isDataLoaded && 
+                {settings.isDataLoaded && 
                     <SideGraph 
-                        graph={props.graphData}
-                        subAId={props.match.subA.id}
-                        subBId={props.match.subB.id}
+                        graph={graphData}
+                        subAId={match.subA.id}
+                        subBId={match.subB.id}
                     />
                 }
             </div>

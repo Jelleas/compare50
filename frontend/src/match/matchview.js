@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useReducer} from 'react';
 
 import './matchview.css';
 import SideBar from './sidebar';
@@ -7,34 +7,35 @@ import SplitView from './code/splitview';
 import API from '../api';
 import useSpanManager from './spanmanager';
 
-
-function MatchView() {
-    const getData = function() {
-        setGlobalState({
-            ...globalState,
-            ...{"isDataLoaded": null}
-        })
-
-        Promise.all([
-            API.getMatch(),
-            API.getGraph()
-        ])
-        .then(([match, graph]) => {
-            setGraph(graph);
-            setMatch(match);
-            setGlobalState({
-                ...globalState,
-                ...{"passes": match.passes,
+function useSettings() {
+    const reduce = (state, action) => {
+        switch(action.type) {
+            case 'newMatch':
+                const match = action.value;
+                return {
+                    ...state,
+                    "passes": match.passes,
                     "currentPass": match.passes[0],
                     "isDataLoaded": true,
                     "currentMatch": match.index(),
                     "nMatches": match.numberOfMatches()
                 }
-            });
-        });
+            case 'load':
+                return {
+                    ...state,
+                    "isDataLoaded": null
+                }
+            case 'newSetting':
+                return {
+                    ...state,
+                    ...action.value
+                }
+            default:
+                throw new Error(`unknown action type ${action.type}`);
+        }
     }
 
-    const [globalState, setGlobalState] = useState({
+    const [settings, dispatch] = useReducer(reduce, {
         "currentPass": {
             "name": "",
             "docs": "",
@@ -45,32 +46,54 @@ function MatchView() {
         "passes": [],
         "nMatches": 50,
         "currentMatch": 1,
-        "softWrap": true,
-        "showWhiteSpace": false,
+        "isSoftWrapped": true,
+        "isWhiteSpaceHidden": true,
+        "isIgnoredHidden": false,
         "isDataLoaded": false
     });
+
+    return [settings, dispatch]
+}
+
+
+function MatchView() {
+    const getData = function() {
+        dispatchSettings({type: 'load'})
+
+        Promise.all([
+            API.getMatch(),
+            API.getGraph()
+        ])
+        .then(([match, graph]) => {
+            setGraph(graph);
+            setMatch(match);
+            dispatchSettings({type: 'newMatch', value: match});
+        });
+    }
+
+    const [settings, dispatchSettings] = useSettings()
 
     const [match, setMatch] = useState(API.placeHolderMatch());
 
     const [graphData, setGraph] = useState({});
 
-    if (globalState.isDataLoaded === false) {
+    if (settings.isDataLoaded === false) {
         getData();
     }
 
-    const spanManager = useSpanManager(globalState.currentPass, match);
+    const spanManager = useSpanManager(settings.currentPass, match);
 
     return (
         <div className="row-box" style={{"height":"100vh"}}>
             <div className="row auto" style={{"width":"9em"}}>
                 <div className="column-box" style={{"borderRight": "1px solid #a7adba"}}>
                     <div className="row fill">
-                        <SideBar globalState={globalState} setGlobalState={setGlobalState} match={match} spanManager={spanManager} graphData={graphData}/>
+                        <SideBar settings={settings} dispatchSettings={dispatchSettings} match={match} spanManager={spanManager} graphData={graphData}/>
                     </div>
                 </div>
             </div>
             <div className="row fill">
-                <SplitView topHeight="2.5em" globalState={globalState} match={match} spanManager={spanManager}/>
+                <SplitView topHeight="2.5em" settings={settings} match={match} spanManager={spanManager}/>
             </div>
         </div>
     );
