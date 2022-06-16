@@ -9,7 +9,7 @@ import './matchview.css';
 import './sidebar.css';
 
 
-function SideBar({settings, setSetting, matchData, dispatchMatchData, spanManager, graphData}) {
+function SideBar({settings, setSetting, matchData, dispatchMatchData, spanManager, dispatchRegions, graphData}) {
     const style = {
         "margin": "auto",
         "marginBottom": ".5em",
@@ -39,8 +39,11 @@ function SideBar({settings, setSetting, matchData, dispatchMatchData, spanManage
                 </div>
                 <div className="row auto" style={style}>
                     <GroupNavigation
+                        index={spanManager.selectedGroupIndex() + 1}
+                        total={spanManager.nGroups()}
+                        gotoNext={() => dispatchRegions({type: 'selectNextGroup'})}
+                        gotoPrevious={() => dispatchRegions({type: 'selectPreviousGroup'})}
                         spanManager={spanManager}
-                        setGroup={group => dispatchMatchData({type: "setGroup", value: group})}
                     />
                 </div>
                 <div className="row auto" style={style}>
@@ -277,7 +280,7 @@ function PassButton(props) {
 
 
 
-function GroupNavigation(props) {
+function GroupNavigation({index, total, gotoNext, gotoPrevious}) {
     const prevRef = useRef(null);
     const nextRef = useRef(null);
 
@@ -305,7 +308,7 @@ function GroupNavigation(props) {
                 "paddingBottom": ".1em",
                 "color": "black"
             }}>
-                {formatFraction(props.spanManager.selectedGroupIndex() + 1, props.spanManager.nGroups())}
+                {formatFraction(index, total)}
             </div>
             <div className="btn-group horizontal" style={{"width":"100%"}} data-tip={`Press Q E`} data-for="sidebar-tooltip" data-place="bottom">
                 <span className="btn">
@@ -314,7 +317,7 @@ function GroupNavigation(props) {
                         ref={prevRef}
                         type="button"
                         style={{"width":"50%"}}
-                        onClick={() => props.spanManager.selectPreviousGroup()}
+                        onClick={gotoPrevious}
                     >
                         &lt;
                     </button>
@@ -325,7 +328,7 @@ function GroupNavigation(props) {
                         ref={nextRef}
                         type="button"
                         style={{"width":"50%"}}
-                        onClick={() => props.spanManager.selectNextGroup()}
+                        onClick={gotoNext}
                     >
                         &gt;
                     </button>

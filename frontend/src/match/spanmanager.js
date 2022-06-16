@@ -1,4 +1,4 @@
-import {useState, useMemo, useRef, useReducer} from 'react';
+import { useState, useMemo, useRef, useReducer } from 'react';
 
 function initRegionMap(match, pass) {
     if (match == null || pass == null) {
@@ -48,7 +48,64 @@ function initSpanStates(regionMap) {
     }, {});
 }
 
-function useRegions() {
+function reselect() {
+
+}
+
+function select(similarities, region) {
+    // Grab the span that is selected
+    const selectedSpan = similarities.getSpan(region);
+
+    // If this span was selected before, highlight the next span in the other sub
+    if (similarities._spanStates[selectedSpan.id] === Span.STATES.HIGHLIGHTED) {
+        return reselect(similarities, selectedSpan);
+    }
+
+    // Grab all spans in the same group
+    const groupedSpans = similarities.spans.filter(span => span.groupId === selectedSpan.groupId);
+
+    // Keep track of whether the first span in the other sub has been found
+    let foundFirst = false;
+
+    // Highlight the selected span, and the first in the other sub, select all other grouped spans
+    let spanStates = groupedSpans.reduce((acc, span) => {
+        if (span === selectedSpan) {
+            acc[span.id] = Span.STATES.HIGHLIGHTED;
+        }
+        else if (!foundFirst && span.subId !== selectedSpan.subId) {
+            acc[span.id] = Span.STATES.HIGHLIGHTED;
+            foundFirst = true;
+        }
+        else {
+            acc[span.id] = Span.STATES.SELECTED;
+        }
+        return acc;
+    }, {});
+
+    // Set all other spans to inactive
+    spanStates = similarities.spans.reduce((acc, span) => {
+        if (!acc.hasOwnProperty(span.id)) {
+            acc[span.id] = Span.STATES.INACTIVE;
+        }
+        return acc;
+    }, spanStates);
+
+    return spanStates;
+}
+
+function selectNextGroup(similarities) {
+    const groupId = similarities.getNextGroupId();
+    const firstSpanIngroup = similarities.spans.find(span => span.groupId === groupId);
+    return select(similarities, firstSpanIngroup);
+}
+
+function selectPreviousGroup(similarities) {
+    const groupId = similarities.getPreviousGroupId();
+    const firstSpanIngroup = similarities.spans.find(span => span.groupId === groupId);
+    return select(similarities, firstSpanIngroup);
+}
+
+function useSimilarities() {
     const reduce = (state, action) => {
         switch(action.type) {
             case 'set':
@@ -63,6 +120,12 @@ function useRegions() {
                     ignoredRegionMap: ignoredRegionMap,
                     spanStates: spanStates
                 }
+            case 'selectNextGroup':
+                const nextSpanStates = selectNextGroup(wrap(state));
+                return {...state, spanStates: nextSpanStates};
+            case 'selectPreviousGroup':
+                const previousSpanStates = selectPreviousGroup(wrap(state));
+                return {...state, spanStates: previousSpanStates};
             // case 'activate':
             //     return activate(state, action.value);
             // case 'select':
@@ -74,8 +137,11 @@ function useRegions() {
         }
     }
 
+    const wrap = ({pass, match, regionMap, ignoredRegionMap, spanStates}) => {
+        return new Similarities(regionMap, ignoredRegionMap, spanStates, () => null)
+    }
 
-    const [regions, dispatch] = useReducer(reduce, {
+    const [similaritiesState, dispatch] = useReducer(reduce, {
         pass: null,
         match: null,
         regionMap: initRegionMap(),
@@ -83,7 +149,7 @@ function useRegions() {
         spanStates: []
     });
 
-    return [new SpanManager(regions.regionMap, regions.ignoredRegionMap, regions.spanStates, () => null), dispatch];
+    return [wrap(similaritiesState), dispatch];
 }
 
 /*
@@ -92,7 +158,7 @@ function useRegions() {
  * A region is an object of the form:
  * {fileId: 1, start: 0, end: 10}
  */
-class SpanManager {
+class Similarities {
     constructor(regionMap, ignoredRegionMap, spanStates, setSpanStates) {
         this.spans = regionMap.spans;
         this._regionMap = regionMap;
@@ -108,7 +174,7 @@ class SpanManager {
     }
 
     activate(region) {
-        const selectedSpan = this._getSpan(region);
+        const selectedSpan = this.getSpan(region);
 
         const groupId = selectedSpan.groupId;
 
@@ -138,7 +204,7 @@ class SpanManager {
 
     select(region) {
         // Grab the span that is selected
-        const selectedSpan = this._getSpan(region);
+        const selectedSpan = this.getSpan(region);
 
         // If this span was selected before, highlight the next span in the other sub
         if (this._spanStates[selectedSpan.id] === Span.STATES.HIGHLIGHTED) {
@@ -213,28 +279,6 @@ class SpanManager {
         this._setSpanStates(spanStates);
     }
 
-    selectNextGroup() {
-        const groupId = this._regionMap.getNextGroupId(this._selectedGroupId())
-
-        for (let span of this.spans) {
-            if (span.groupId === groupId) {
-                this.select(span);
-                return;
-            }
-        }
-    }
-
-    selectPreviousGroup() {
-        const groupId = this._regionMap.getPreviousGroupId(this._selectedGroupId())
-
-        for (let span of this.spans) {
-            if (span.groupId === groupId) {
-                this.select(span);
-                return;
-            }
-        }
-    }
-
     isFirstInHighlightedSpan(region) {
         const spans = this._regionMap.getSpans(region);
         const span = spans.find(span => this._spanStates[span.id] === Span.STATES.HIGHLIGHTED);
@@ -257,12 +301,20 @@ class SpanManager {
     }
 
     isGrouped(region) {
-        const span = this._getSpan(region);
+        const span = this.getSpan(region);
         return span !== undefined && span.groupId !== null;
     }
 
     isIgnored(region) {
         return this._ignoredRegionMap.getSpans(region).length !== 0;
+    }
+
+    getNextGroupId() {
+        return this._regionMap.getNextGroupId(this._selectedGroupId());
+    }
+
+    getPreviousGroupId() {
+        return this._regionMap.getPreviousGroupId(this._selectedGroupId());
     }
 
     selectedGroupIndex() {
@@ -277,7 +329,7 @@ class SpanManager {
         return this.spans.filter(span => this._spanStates[span.id] === Span.STATES.HIGHLIGHTED);
     }
 
-    _getSpan(region) {
+    getSpan(region) {
         // If the region is already a span, use that
         if (region instanceof Span) {
             return region;
@@ -403,49 +455,49 @@ class Span {
 
 
 function useSpanManager(pass, match) {
-    const unselectSpanStates = spanStates => {
-        Object.keys(spanStates).forEach(spanId => {
-            if (spanStates[spanId] === Span.STATES.SELECTED || spanStates[spanId] === Span.STATES.HIGHLIGHTED) {
-                spanStates[spanId] = Span.STATES.INACTIVE;
-            }
-        });
-        return spanStates;
-    }
+    // const unselectSpanStates = spanStates => {
+    //     Object.keys(spanStates).forEach(spanId => {
+    //         if (spanStates[spanId] === Span.STATES.SELECTED || spanStates[spanId] === Span.STATES.HIGHLIGHTED) {
+    //             spanStates[spanId] = Span.STATES.INACTIVE;
+    //         }
+    //     });
+    //     return spanStates;
+    // }
 
-    // Memoize the (expensive) mapping from regions to spans on the selected pass
-    const regionMap = useMemo(() => initRegionMap(match, pass), [pass.name]);
+    // // Memoize the (expensive) mapping from regions to spans on the selected pass
+    // const regionMap = useMemo(() => initRegionMap(match, pass), [pass.name]);
 
-    // Memoize the (expensive) mapping from regions to ignoredSpans on the selected pass
-    const ignoredRegionMap = useMemo(() => initIgnoredRegionMap(pass), [pass.name]);
+    // // Memoize the (expensive) mapping from regions to ignoredSpans on the selected pass
+    // const ignoredRegionMap = useMemo(() => initIgnoredRegionMap(pass), [pass.name]);
 
-    // A map from pass.name => span.id => state
-    const [allSpanStates, setAllSpanStates] = useState({});
+    // // A map from pass.name => span.id => state
+    // const [allSpanStates, setAllSpanStates] = useState({});
 
-    // Keep track of the last pass
-    const passRef = useRef(pass);
+    // // Keep track of the last pass
+    // const passRef = useRef(pass);
 
-    // Retrieve the spanStates from the map, otherwise create new
-    let spanStates = allSpanStates[pass.name]
-    if (spanStates === undefined) {
-        spanStates = initSpanStates(regionMap);
-    }
+    // // Retrieve the spanStates from the map, otherwise create new
+    // let spanStates = allSpanStates[pass.name]
+    // if (spanStates === undefined) {
+    //     spanStates = initSpanStates(regionMap);
+    // }
 
-    // In case pass changed, unselect everything in the new pass
-    if (passRef.current !== pass) {
-        passRef.current = pass;
-        spanStates = unselectSpanStates(spanStates);
-    }
+    // // In case pass changed, unselect everything in the new pass
+    // if (passRef.current !== pass) {
+    //     passRef.current = pass;
+    //     spanStates = unselectSpanStates(spanStates);
+    // }
 
-    // Callback to set the spanStates for the current pass
-    const setSpanStates = spanStates => {
-        const temp = {}
-        temp[pass.name] = {...(allSpanStates[pass.name]), ...spanStates}
-        setAllSpanStates({...allSpanStates, ...temp})
-    };
+    // // Callback to set the spanStates for the current pass
+    // const setSpanStates = spanStates => {
+    //     const temp = {}
+    //     temp[pass.name] = {...(allSpanStates[pass.name]), ...spanStates}
+    //     setAllSpanStates({...allSpanStates, ...temp})
+    // };
 
-    return new SpanManager(regionMap, ignoredRegionMap, spanStates, setSpanStates);
+    // return new SpanManager(regionMap, ignoredRegionMap, spanStates, setSpanStates);
 }
 
 
-export {Span, useRegions}
+export {Span, useSimilarities}
 export default useSpanManager

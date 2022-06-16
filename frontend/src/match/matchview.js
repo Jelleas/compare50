@@ -5,7 +5,7 @@ import SideBar from './sidebar';
 import SplitView from './code/splitview';
 
 import API from '../api';
-import useSpanManager, {useRegions} from './spanmanager';
+import useSpanManager, {useSimilarities} from './spanmanager';
 
 function useMatchData() {
     const reduce = (state, action) => {
@@ -91,7 +91,7 @@ function MatchView() {
 
     // const spanManager = useSpanManager(matchData.currentPass, matchData.match);
 
-    const [spanManager, dispatchRegions] = useRegions();
+    const [spanManager, dispatchRegions] = useSimilarities();
 
     if (matchData.isLoaded === false) {
         getData();
@@ -108,6 +108,7 @@ function MatchView() {
                             matchData={matchData}
                             dispatchMatchData={dispatchMatchData}
                             spanManager={spanManager}
+                            dispatchRegions={dispatchRegions}
                             graphData={graphData}/>
                     </div>
                 </div>
