@@ -108,6 +108,7 @@ function Side({
                             key={file.name}
                             file={file}
                             similarities={similarities}
+                            dispatchSimilarities={dispatchSimilarities}
                             softWrap={settings.isSoftWrapped}
                             hideIgnored={settings.isIgnoredHidden}
                             showWhiteSpace={!settings.isWhiteSpaceHidden}

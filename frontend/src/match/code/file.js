@@ -8,6 +8,7 @@ function File({
     file,
     updateFileVisibility,
     similarities,
+    dispatchSimilarities,
     updateCoverage,
     scrollTo,
     hideIgnored,
@@ -57,6 +58,7 @@ function File({
                 showWhiteSpace={showWhiteSpace}
                 scrollTo={scrollTo}
                 similarities={similarities}
+                dispatchSimilarities={dispatchSimilarities}
                 interactionBlocked={interactionBlocked}
             />
         );
@@ -83,6 +85,7 @@ function File({
 function Fragment({
     fragment,
     similarities,
+    dispatchSimilarities,
     hideIgnored,
     interactionBlocked,
     showWhiteSpace,
@@ -132,7 +135,10 @@ function Fragment({
             onMouseUp={
                 hasMouseOvers
                     ? () => {
-                          similarities.select(fragment);
+                          dispatchSimilarities({
+                              type: "select",
+                              payload: fragment,
+                          });
                       }
                     : undefined
             }
