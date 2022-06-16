@@ -34,7 +34,10 @@ function SideBar({settings, setSetting, matchData, dispatchMatchData, spanManage
                     <PassNavigation
                         passes={matchData.passes}
                         currentPass={matchData.currentPass}
-                        setPass={pass => dispatchMatchData({type: "setPass", value: pass})}
+                        setPass={pass => {
+                            dispatchMatchData({type: 'setPass', payload: pass})
+                            dispatchRegions({type: 'set', payload: {match: matchData.match, pass: pass}})
+                        }}
                     />
                 </div>
                 <div className="row auto" style={style}>
@@ -227,16 +230,16 @@ function MatchNavigation(props) {
 }
 
 
-function PassNavigation(props) {
+function PassNavigation({passes, currentPass, setPass}) {
     return (
         <div className="btn-group vertical">
-            {props.passes.map((pass, i) =>
+            {passes.map((pass, i) =>
                 <PassButton
                     pass={pass}
                     index={i + 1}
-                    isSelected={props.currentPass.name === pass.name}
+                    isSelected={currentPass.name === pass.name}
                     key={`pass_${pass.name}`}
-                    setPass={props.setPass}
+                    setPass={setPass}
                 />
             )}
         </div>

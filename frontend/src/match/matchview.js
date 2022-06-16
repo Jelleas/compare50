@@ -11,7 +11,7 @@ function useMatchData() {
     const reduce = (state, action) => {
         switch(action.type) {
             case 'new':
-                const {match, pass} = action.value;
+                const {match, pass} = action.payload;
                 return {
                     "currentPass": pass,
                     "match": match,
@@ -23,9 +23,9 @@ function useMatchData() {
             case 'load':
                 return {...state, "isLoaded": null};
             case 'setPass':
-                return {...state, "currentPass": action.value};
+                return {...state, "currentPass": action.payload};
             case 'setGroup':
-                return {...state, "currentGroup": action.value};
+                return {...state, "currentGroup": action.payload};
             default:
                 throw new Error(`unknown action type ${action.type}`);
         }
@@ -78,8 +78,8 @@ function MatchView() {
             setGraph(graph);
             const pass = match.passes[0];
             console.log(pass)
-            dispatchMatchData({type: 'new', value: {match: match, pass: pass}});
-            dispatchRegions({type: 'set', value: {match: match, pass: pass}});
+            dispatchMatchData({type: 'new', payload: {match: match, pass: pass}});
+            dispatchRegions({type: 'set', payload: {match: match, pass: pass}});
         });
     }
 

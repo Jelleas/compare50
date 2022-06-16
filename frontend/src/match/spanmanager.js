@@ -109,7 +109,7 @@ function useSimilarities() {
     const reduce = (state, action) => {
         switch(action.type) {
             case 'set':
-                const {match, pass} = action.value;
+                const {match, pass} = action.payload;
                 const regionMap = initRegionMap(match, pass);
                 const ignoredRegionMap = initIgnoredRegionMap(pass);
                 const spanStates = initSpanStates(regionMap);
