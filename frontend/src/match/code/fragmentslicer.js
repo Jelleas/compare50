@@ -7,10 +7,9 @@ class Fragment {
     }
 }
 
-
 function slice(file, spans) {
     let slicingMarks = [];
-    spans.forEach(span => {
+    spans.forEach((span) => {
         slicingMarks.push(span.start);
         slicingMarks.push(span.end);
     });
@@ -24,18 +23,19 @@ function slice(file, spans) {
 
     let fragments = [];
     for (let i = 0; i < slicingMarks.length - 1; i++) {
-        fragments.push(new Fragment(file, slicingMarks[i], slicingMarks[i + 1]));
+        fragments.push(
+            new Fragment(file, slicingMarks[i], slicingMarks[i + 1])
+        );
     }
 
     return fragments;
 }
 
-
 // Spans of individual spaces are never relevant for the view,
 // but do cause many more fragments to be created.
 // For performance reasons, this filters out any spans containing just a space.
 function filterIgnoredWhitespaceSpans(file, spans) {
-    return spans.filter(span => {
+    return spans.filter((span) => {
         if (span.end - span.start === 1 && file.content[span.start] === " ") {
             return false;
         }
@@ -43,10 +43,8 @@ function filterIgnoredWhitespaceSpans(file, spans) {
     });
 }
 
-
 function createFragments(file, spans) {
     return slice(file, filterIgnoredWhitespaceSpans(file, spans));
 }
-
 
 export default createFragments;

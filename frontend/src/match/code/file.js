@@ -1,42 +1,42 @@
-import React, {useState, useRef, useEffect, useMemo} from 'react';
-import createFragments from './fragmentslicer'
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import createFragments from "./fragmentslicer";
 
-import "../matchview.css"
+import "../matchview.css";
 import "./file.css";
 
-// function useTraceUpdate(props) {
-//   const prev = useRef(props);
-//   useEffect(() => {
-//     const changedProps = Object.entries(props).reduce((ps, [k, v]) => {
-//       if (prev.current[k] !== v) {
-//         ps[k] = [prev.current[k], v];
-//       }
-//       return ps;
-//     }, {});
-//     if (Object.keys(changedProps).length > 0) {
-//       console.log('Changed props:', changedProps);
-//     }
-//     prev.current = props;
-//   });
-// }
-
-function File(props) {
+function File({
+    file,
+    updateFileVisibility,
+    similarities,
+    updateCoverage,
+    scrollTo,
+    hideIgnored,
+    showWhiteSpace,
+    interactionBlocked,
+    softWrap,
+}) {
     const [visibilityRef, entry] = useIntersect({
-        threshold: Array.from(Array(100).keys(), i => i / 100),
+        threshold: Array.from(Array(100).keys(), (i) => i / 100),
     });
 
-    const file = props.file;
-    const _updateFileVisibility = props.updateFileVisibility;
+    const _updateFileVisibility = updateFileVisibility;
     useEffect(() => {
         _updateFileVisibility(file.name, entry.intersectionRatio);
     }, [file.name, _updateFileVisibility, entry.intersectionRatio]);
 
-    const fragments = useFragments(file, props.spanManager.spans, props.spanManager.ignoredSpans);
+    const fragments = useFragments(
+        file,
+        similarities.spans,
+        similarities.ignoredSpans
+    );
 
-    const coverage = useCoverage(fragments, props.spanManager);
-    const percentage = (coverage.numMatchedChars / coverage.numChars * 100).toFixed(0);
+    const coverage = useCoverage(fragments, similarities);
+    const percentage = (
+        (coverage.numMatchedChars / coverage.numChars) *
+        100
+    ).toFixed(0);
 
-    const _updateCoverage = props.updateCoverage;
+    const _updateCoverage = updateCoverage;
     useEffect(() => {
         _updateCoverage(coverage);
     }, [coverage, _updateCoverage]);
@@ -44,103 +44,129 @@ function File(props) {
     // Keep track of whether a line of code starts on a newline (necessary for line numbers through css)
     let onNewline = true;
 
-    const fragmentElems = fragments.map((frag, i) => {
-        const id = `frag_${props.file.id}_${frag.start}`;
-        const fragElem = <Fragment
-                            key={id}
-                            fragment={frag}
-                            fileId={props.file.id}
-                            id={id}
-                            onNewline={onNewline}
-                            hideIgnored={props.hideIgnored}
-                            showWhiteSpace={props.showWhiteSpace}
-                            scrollTo={props.scrollTo}
-                            spanManager={props.spanManager}
-                            interactionBlocked={props.interactionBlocked}
-        />
+    const fragmentElems = fragments.map((frag) => {
+        const id = `frag_${file.id}_${frag.start}`;
+        const fragElem = (
+            <Fragment
+                key={id}
+                fragment={frag}
+                fileId={file.id}
+                id={id}
+                onNewline={onNewline}
+                hideIgnored={hideIgnored}
+                showWhiteSpace={showWhiteSpace}
+                scrollTo={scrollTo}
+                similarities={similarities}
+                interactionBlocked={interactionBlocked}
+            />
+        );
         onNewline = frag.text.endsWith("\n");
         return fragElem;
     });
 
     return (
         <>
-            <h4> {props.file.name} <span>{percentage}%</span></h4>
-            <pre ref={visibilityRef} className={(props.softWrap ? "softwrap" : "") + " monospace-text"}>
-                {(fragmentElems)}
+            <h4>
+                {" "}
+                {file.name} <span>{percentage}%</span>
+            </h4>
+            <pre
+                ref={visibilityRef}
+                className={(softWrap ? "softwrap" : "") + " monospace-text"}
+            >
+                {fragmentElems}
             </pre>
         </>
-    )
+    );
 }
 
-
-function Fragment(props) {
+function Fragment({
+    fragment,
+    similarities,
+    hideIgnored,
+    interactionBlocked,
+    showWhiteSpace,
+    onNewline,
+    id,
+    scrollTo,
+}) {
     // Break up the fragments into lines (keep the newline)
-    const lines = props.fragment.text.split(/(?<=\n)/g);
+    const lines = fragment.text.split(/(?<=\n)/g);
 
     const ref = useRef(null);
 
-    const isHighlighted = props.spanManager.isHighlighted(props.fragment);
+    const isHighlighted = similarities.isHighlighted(fragment);
 
     useEffect(() => {
         // If this fragment is highlighted, and it's the first in its span, scroll to it
-        if (isHighlighted && props.spanManager.isFirstInHighlightedSpan(props.fragment)) {
-            props.scrollTo(ref.current);
+        if (isHighlighted && similarities.isFirstInHighlightedSpan(fragment)) {
+            scrollTo(ref.current);
         }
-    })
+    });
 
-    let className = getClassName(props.fragment, props.spanManager, props.hideIgnored);
+    let className = getClassName(fragment, similarities, hideIgnored);
 
-    const hasMouseOvers = !props.interactionBlocked && props.spanManager.isGrouped(props.fragment);
+    const hasMouseOvers =
+        !interactionBlocked && similarities.isGrouped(fragment);
 
     return (
         <span
             ref={ref}
             className={className}
-            key={props.id}
-            onMouseEnter={hasMouseOvers ? event => props.spanManager.activate(props.fragment) : undefined}
-            onMouseDown={hasMouseOvers ? event => {
-                // Prevent text selection when clicking on highlighted fragments
-                if (props.spanManager.isHighlighted(props.fragment)) {
-                    event.preventDefault();
-                }
-            } : undefined}
-            onMouseUp={hasMouseOvers ? event => {
-                props.spanManager.select(props.fragment);
-            } : undefined}
+            key={id}
+            onMouseEnter={
+                hasMouseOvers
+                    ? () => similarities.activate(fragment)
+                    : undefined
+            }
+            onMouseDown={
+                hasMouseOvers
+                    ? (event) => {
+                          // Prevent text selection when clicking on highlighted fragments
+                          if (similarities.isHighlighted(fragment)) {
+                              event.preventDefault();
+                          }
+                      }
+                    : undefined
+            }
+            onMouseUp={
+                hasMouseOvers
+                    ? () => {
+                          similarities.select(fragment);
+                      }
+                    : undefined
+            }
         >
             {lines.map((line, lineIndex) => {
-                const onNewline = props.onNewline || lineIndex > 0
+                const isNewLine = onNewline || lineIndex > 0;
 
                 // If starting on a newline, make the leading whitespace visible
-                if (onNewline && props.showWhiteSpace) {
+                if (isNewLine && showWhiteSpace) {
                     line = replaceLeadingWhitespace(line);
                 }
 
                 return (
                     <code
-                        key={`code_${props.id}_${lineIndex}`}
-                        className={onNewline ? "newline" : ""}
+                        key={`code_${id}_${lineIndex}`}
+                        className={isNewLine ? "newline" : ""}
                     >
                         {line}
                     </code>
-                )
+                );
             })}
         </span>
-    )
+    );
 }
 
-
 function replaceLeadingWhitespace(line) {
-    let newLine = ""
+    let newLine = "";
 
     for (let i = 0; i < line.length; i++) {
         if (line[i] === " ") {
             newLine += ".";
-        }
-        else if (line[i] === "\t") {
+        } else if (line[i] === "\t") {
             newLine += "____";
-        }
-        else {
+        } else {
             newLine += line.slice(i);
             break;
         }
@@ -148,7 +174,6 @@ function replaceLeadingWhitespace(line) {
 
     return newLine;
 }
-
 
 function getClassName(fragment, spanManager, hideIgnored) {
     const classNames = [];
@@ -162,41 +187,36 @@ function getClassName(fragment, spanManager, hideIgnored) {
 
     if (spanManager.isHighlighted(fragment)) {
         classNames.push("highlighted-span");
-    }
-    else if (spanManager.isActive(fragment)) {
+    } else if (spanManager.isActive(fragment)) {
         classNames.push("active-span");
-    }
-    else if (spanManager.isSelected(fragment)) {
+    } else if (spanManager.isSelected(fragment)) {
         classNames.push("selected-span");
-    }
-    else if (spanManager.isGrouped(fragment)) {
+    } else if (spanManager.isGrouped(fragment)) {
         classNames.push("grouped-span");
     }
 
     return classNames.join(" ");
 }
 
-
 function useFragments(file, spans, ignoredSpans) {
     return useMemo(() => {
-        const fromFile = span => span.fileId === file.id;
+        const fromFile = (span) => span.fileId === file.id;
         const spansFromFile = spans.filter(fromFile);
         const ignoredSpansFromFile = ignoredSpans.filter(fromFile);
         const allSpans = spansFromFile.concat(ignoredSpansFromFile);
-        return createFragments(file, allSpans)
+        return createFragments(file, allSpans);
     }, [file, spans, ignoredSpans]);
 }
-
 
 function useCoverage(fragments, spanManager) {
     const compute = () => {
         let numChars = 0;
         let numMatchedChars = 0;
-        fragments.forEach(fragment => {
+        fragments.forEach((fragment) => {
             if (spanManager.isIgnored(fragment)) {
                 return;
             }
-            
+
             const size = fragment.end - fragment.start;
             if (spanManager.isGrouped(fragment)) {
                 numMatchedChars += size;
@@ -206,25 +226,25 @@ function useCoverage(fragments, spanManager) {
 
         return {
             numMatchedChars: numMatchedChars,
-            numChars: numChars
+            numChars: numChars,
         };
-    }
+    };
 
     return useMemo(compute, [fragments]);
 }
 
-
 // https://medium.com/the-non-traditional-developer/how-to-use-an-intersectionobserver-in-a-react-hook-9fb061ac6cb5
-const useIntersect = ({root=null, rootMargin, threshold=0}) => {
+const useIntersect = ({ root = null, rootMargin, threshold = 0 }) => {
     const [entry, updateEntry] = useState({});
     const [node, setNode] = useState(null);
 
     const observer = useRef(
         new window.IntersectionObserver(([entry]) => updateEntry(entry), {
-        root,
-        rootMargin,
-        threshold
-    }));
+            root,
+            rootMargin,
+            threshold,
+        })
+    );
 
     useEffect(() => {
         const { current: currentObserver } = observer;
@@ -240,5 +260,4 @@ const useIntersect = ({root=null, rootMargin, threshold=0}) => {
     return [setNode, entry];
 };
 
-
-export default File
+export default File;

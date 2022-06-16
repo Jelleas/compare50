@@ -44,7 +44,7 @@ class D3Graph {
 
         // the node that is currently being dragged by the user
         this.dragTarget = null;
-        
+
         // the d3 simulation (force-graph)
         this.simulation = null;
 
@@ -83,9 +83,17 @@ class D3Graph {
                 let start = null;
                 if (this.HORRIBLE_TWO_NODE_HACK) {
                     // Because the hack adds an edge with weight -1, filter it out
-                    start = Math.floor(Math.min(...this.linksInView.map(d => d.value).filter(v => v >= 0)));
+                    start = Math.floor(
+                        Math.min(
+                            ...this.linksInView
+                                .map((d) => d.value)
+                                .filter((v) => v >= 0)
+                        )
+                    );
                 } else {
-                    start = Math.floor(Math.min(...this.linksInView.map(d => d.value)))
+                    start = Math.floor(
+                        Math.min(...this.linksInView.map((d) => d.value))
+                    );
                 }
 
                 this.slider.load(start, this._cutoff.bind(this));
@@ -151,12 +159,17 @@ class D3Graph {
         if (this.props.width !== null && this.props.width !== undefined) {
             return Math.max(this.props.width, MIN_WIDTH);
         }
-    
+
         // calculate width of provided (likely, parent) element
         const style = getComputedStyle(el);
-        return Math.max(el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight), MIN_WIDTH);
+        return Math.max(
+            el.clientWidth -
+                parseFloat(style.paddingLeft) -
+                parseFloat(style.paddingRight),
+            MIN_WIDTH
+        );
     }
-    
+
     _getHeight() {
         const el = this.domElement.parentNode;
 
@@ -164,9 +177,12 @@ class D3Graph {
         if (this.props.height !== null && this.props.height !== undefined) {
             return Math.max(this.props.height, MIN_HEIGHT);
         }
-    
+
         // calculate height of provided (likely, parent) element
-        return Math.max(el.offsetHeight - (this.slider ? SLIDER_HEIGHT : 0) - 4, MIN_HEIGHT);
+        return Math.max(
+            el.offsetHeight - (this.slider ? SLIDER_HEIGHT : 0) - 4,
+            MIN_HEIGHT
+        );
     }
 
     // Initialize the data
@@ -174,8 +190,12 @@ class D3Graph {
         if (this.HORRIBLE_TWO_NODE_HACK) {
             /// When there are exactly two nodes, add an additional one with an id of "" and an edge with value -1
             if (this.allNodes.length === 2) {
-                this.allNodes.push({id: ""});
-                this.allLinks.push({source: this.allNodes[0], target: "", value: -1});
+                this.allNodes.push({ id: "" });
+                this.allLinks.push({
+                    source: this.allNodes[0],
+                    target: "",
+                    value: -1,
+                });
             }
         }
 
@@ -184,16 +204,28 @@ class D3Graph {
         this.linksInView = this.allLinks;
 
         // start the simulation
-        this.simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(d => d.id))
-            .force("charge", d3.forceManyBody().strength(-200).distanceMax(50).distanceMin(10))
-            .force("collision", d3.forceCollide().radius(d => this.props.radius * 2));
+        this.simulation = d3
+            .forceSimulation()
+            .force(
+                "link",
+                d3.forceLink().id((d) => d.id)
+            )
+            .force(
+                "charge",
+                d3
+                    .forceManyBody()
+                    .strength(-200)
+                    .distanceMax(50)
+                    .distanceMin(10)
+            )
+            .force(
+                "collision",
+                d3.forceCollide().radius((d) => this.props.radius * 2)
+            );
 
-        this.simulation
-            .nodes(this.nodesInView);
+        this.simulation.nodes(this.nodesInView);
 
-        this.simulation.force("link")
-            .links(this.linksInView);
+        this.simulation.force("link").links(this.linksInView);
     }
 
     // Initialize the graph visualization
@@ -202,8 +234,9 @@ class D3Graph {
 
         // If svg is clicked, unselect node
         this.svg.on("click", () => {
-            this.allNodes.forEach(node =>
-                node.isHighlighted = node.isSelected = false)
+            this.allNodes.forEach(
+                (node) => (node.isHighlighted = node.isSelected = false)
+            );
 
             this.props.callbacks.deselect();
         });
@@ -214,81 +247,99 @@ class D3Graph {
         // scale graph and slider
         this.onResize();
 
-        let choseX = d3.randomUniform(this.width / 4, 3 * this.width / 4);
-        let choseY = d3.randomUniform(this.height / 4, 3 * this.height / 4);
-        let posMap = []
-        this.nodesInView.forEach(d => {
+        let choseX = d3.randomUniform(this.width / 4, (3 * this.width) / 4);
+        let choseY = d3.randomUniform(this.height / 4, (3 * this.height) / 4);
+        let posMap = [];
+        this.nodesInView.forEach((d) => {
             if (posMap[d.group] === undefined) {
                 posMap[d.group] = {
                     x: choseX(),
-                    y: choseY()
+                    y: choseY(),
                 };
             }
         });
 
-        this.simulation.force("x", d3.forceX(d => posMap[d.group].x).strength(0.2))
-                .force("y", d3.forceY(d => posMap[d.group].y).strength(0.2));
+        this.simulation
+            .force("x", d3.forceX((d) => posMap[d.group].x).strength(0.2))
+            .force("y", d3.forceY((d) => posMap[d.group].y).strength(0.2));
 
-        setTimeout(() => this.simulation.force("x", null).force("y", null), 300);
+        setTimeout(
+            () => this.simulation.force("x", null).force("y", null),
+            300
+        );
     }
 
     _setHighlighted(highlighted) {
         if (highlighted === null || highlighted === undefined) {
-            this.allNodes.forEach(node => node.isHighlighted = false);
-        }
-        else {
-            this.allNodes.forEach(node => node.isHighlighted = highlighted.nodes.includes(node.id));
+            this.allNodes.forEach((node) => (node.isHighlighted = false));
+        } else {
+            this.allNodes.forEach(
+                (node) =>
+                    (node.isHighlighted = highlighted.nodes.includes(node.id))
+            );
         }
     }
 
     _setSelected(selected) {
         if (selected === null || selected === undefined) {
-            this.allNodes.forEach(node => node.isSelected = false);
-        }
-        else {
-            this.allNodes.forEach(node => node.isSelected = node.id === selected.id);
+            this.allNodes.forEach((node) => (node.isSelected = false));
+        } else {
+            this.allNodes.forEach(
+                (node) => (node.isSelected = node.id === selected.id)
+            );
         }
     }
 
     _styleNodes(nodes) {
-        const highlightedNode = this.allNodes.find(node => node.isHighlighted);
-        const highlightedGroup = highlightedNode !== undefined ? highlightedNode.group : null;
-        
-        const selectedNode = this.allNodes.find(node => node.isSelected);
-        const selectedGroup = selectedNode !== undefined ? selectedNode.group : null;
+        const highlightedNode = this.allNodes.find(
+            (node) => node.isHighlighted
+        );
+        const highlightedGroup =
+            highlightedNode !== undefined ? highlightedNode.group : null;
+
+        const selectedNode = this.allNodes.find((node) => node.isSelected);
+        const selectedGroup =
+            selectedNode !== undefined ? selectedNode.group : null;
 
         // add strokes and fill depending on the state of the node (highlighted & selected)
-        nodes.style("fill", d => {
-            if (highlightedGroup === null && selectedGroup === null) {
-                return d.color;
-            }
-            if (highlightedGroup !== null && highlightedGroup === d.group) {
-                return d.color;
-            }
-            if (selectedGroup !== null && selectedGroup === d.group) {
-                return d.color;
-            }
-            return "grey";
-        })
-        .attr("stroke", function(d) {
-            if (d.isSelected || d.isHighlighted) {
-                return "black";
-            }
-            if (d.group === highlightedGroup) {
-                return d3.select(this).style("fill");
-            }
-            return "none";
-        })
-        .attr("stroke-width", d => d.isSelected || d.isHighlighted ? "5px" : "");
+        nodes
+            .style("fill", (d) => {
+                if (highlightedGroup === null && selectedGroup === null) {
+                    return d.color;
+                }
+                if (highlightedGroup !== null && highlightedGroup === d.group) {
+                    return d.color;
+                }
+                if (selectedGroup !== null && selectedGroup === d.group) {
+                    return d.color;
+                }
+                return "grey";
+            })
+            .attr("stroke", function (d) {
+                if (d.isSelected || d.isHighlighted) {
+                    return "black";
+                }
+                if (d.group === highlightedGroup) {
+                    return d3.select(this).style("fill");
+                }
+                return "none";
+            })
+            .attr("stroke-width", (d) =>
+                d.isSelected || d.isHighlighted ? "5px" : ""
+            );
     }
 
     _cutoff(n) {
-        this.linksInView = this.allLinks.filter(d => (d.value) >= n);
-        const nodeIds = new Set(this.linksInView.map(d => d.source.id).concat(this.linksInView.map(d => d.target.id)));
-        this.nodesInView = this.allNodes.filter(d => nodeIds.has(d.id));
+        this.linksInView = this.allLinks.filter((d) => d.value >= n);
+        const nodeIds = new Set(
+            this.linksInView
+                .map((d) => d.source.id)
+                .concat(this.linksInView.map((d) => d.target.id))
+        );
+        this.nodesInView = this.allNodes.filter((d) => nodeIds.has(d.id));
 
         this._reloadNodes();
-        this._jiggle(.1);
+        this._jiggle(0.1);
 
         this.props.callbacks.cutoff(n);
     }
@@ -296,62 +347,80 @@ class D3Graph {
     _reloadNodes() {
         if (!this.hasLoaded) return;
 
-        const links = this.gLink.selectAll("line").data(this.linksInView, d => d.index);
+        const links = this.gLink
+            .selectAll("line")
+            .data(this.linksInView, (d) => d.index);
 
         // Add any new links with a transition
-        links.enter().append("line")
+        links
+            .enter()
+            .append("line")
             .attr("stroke-width", 2)
             .attr("visibility", "hidden")
             .interrupt("foo")
-            .transition("foo").delay(280).duration(0)
-                .attr("visibility", "");
+            .transition("foo")
+            .delay(280)
+            .duration(0)
+            .attr("visibility", "");
 
         // Remove and exiting links
         links.exit().remove();
 
         // select all nodes on screen, and bind the new data with the id as key
-        const nodes = this.gNode.selectAll("rect").data(this.nodesInView, d => d.id);
+        const nodes = this.gNode
+            .selectAll("rect")
+            .data(this.nodesInView, (d) => d.id);
         const newNodes = nodes.enter().append("rect");
 
         // Have existing nodes or new nodes that are newly bound transition into view
-        nodes.merge(newNodes)
-            .attr("width", function() {
+        nodes
+            .merge(newNodes)
+            .attr("width", function () {
                 const width = d3.select(this).attr("width");
                 return width ? width : 0;
             })
-            .attr("height", function() {
+            .attr("height", function () {
                 const height = d3.select(this).attr("height");
                 return height ? height : 0;
             })
-            .transition("nodes").duration(280)
-                .attr("width", this.props.radius * 2)
-                .attr("height", this.props.radius * 2);
+            .transition("nodes")
+            .duration(280)
+            .attr("width", this.props.radius * 2)
+            .attr("height", this.props.radius * 2);
 
         // Bind all necessary callbacks to newly created nodes
         newNodes
-            .attr("rx", d => d.isArchive ? this.props.radius * 0.4 : this.props.radius)
-            .attr("ry", d => d.isArchive ? this.props.radius * 0.4 : this.props.radius)
-            .call(d3.drag()
-              .on("start", this._dragstarted.bind(this))
-              .on("drag", this._dragged)
-              .on("end", this._dragended.bind(this)))
+            .attr("rx", (d) =>
+                d.isArchive ? this.props.radius * 0.4 : this.props.radius
+            )
+            .attr("ry", (d) =>
+                d.isArchive ? this.props.radius * 0.4 : this.props.radius
+            )
+            .call(
+                d3
+                    .drag()
+                    .on("start", this._dragstarted.bind(this))
+                    .on("drag", this._dragged)
+                    .on("end", this._dragended.bind(this))
+            )
             .on("click", this._onClickNode.bind(this))
             .on("mouseover", this._onMouseoverNode.bind(this))
             .on("mouseout", this._onMouseoutNode.bind(this))
             .append("title")
-              .text(d => d.path);
-        
+            .text((d) => d.path);
+
         // style each node
         this._styleNodes(newNodes);
 
-        // Remove any exiting nodes with a transition 
-        nodes.exit()
+        // Remove any exiting nodes with a transition
+        nodes
+            .exit()
             .transition("nodes")
-                .delay(0)
-                .duration(100)
-                .attr("width", 0)
-                .attr("height", 0)
-                .remove();
+            .delay(0)
+            .duration(100)
+            .attr("width", 0)
+            .attr("height", 0)
+            .remove();
 
         const allLinks = this.gLink.selectAll("line");
         const allNodes = this.gNode.selectAll("rect");
@@ -362,16 +431,20 @@ class D3Graph {
             .on("tick", () => this._ticked(allLinks, allNodes));
 
         // scale the distance (inverse of similarity) to 10 to 50
-        const minScore = Math.min.apply(null, this.allLinks.map(link => link.value));
+        const minScore = Math.min.apply(
+            null,
+            this.allLinks.map((link) => link.value)
+        );
         const maxScore = 10;
         const deltaScore = maxScore - minScore;
 
-        this.simulation.force("link")
+        this.simulation
+            .force("link")
             .links(this.linksInView)
-            .distance(d => 50 - (d.value - minScore) / deltaScore * 40);
+            .distance((d) => 50 - ((d.value - minScore) / deltaScore) * 40);
     }
 
-    _jiggle(alpha=0.3, duration=300) {
+    _jiggle(alpha = 0.3, duration = 300) {
         this.simulation.alphaTarget(alpha).restart();
         setTimeout(() => this.simulation.alphaTarget(0).restart(), duration);
     }
@@ -382,39 +455,60 @@ class D3Graph {
         const height = this._getHeight();
 
         nodes
-            .attr("x", function(d) { return d.x = Math.max(props.radius, Math.min(width - props.radius * 3, d.x)); })
-            .attr("y", function(d) { return d.y = Math.max(props.radius, Math.min(height - props.radius * 3, d.y)); });
+            .attr("x", function (d) {
+                return (d.x = Math.max(
+                    props.radius,
+                    Math.min(width - props.radius * 3, d.x)
+                ));
+            })
+            .attr("y", function (d) {
+                return (d.y = Math.max(
+                    props.radius,
+                    Math.min(height - props.radius * 3, d.y)
+                ));
+            });
 
         links
-            .attr("x1", function(d) { return d.source.x + props.radius; })
-            .attr("y1", function(d) { return d.source.y + props.radius; })
-            .attr("x2", function(d) { return d.target.x + props.radius; })
-            .attr("y2", function(d) { return d.target.y + props.radius; });
+            .attr("x1", function (d) {
+                return d.source.x + props.radius;
+            })
+            .attr("y1", function (d) {
+                return d.source.y + props.radius;
+            })
+            .attr("x2", function (d) {
+                return d.target.x + props.radius;
+            })
+            .attr("y2", function (d) {
+                return d.target.y + props.radius;
+            });
     }
 
     _dragstarted(d) {
-        this._dragstarted.startSimulationTimeout = setTimeout(() => this.simulation.alphaTarget(0.15).restart(), 150);
-    
+        this._dragstarted.startSimulationTimeout = setTimeout(
+            () => this.simulation.alphaTarget(0.15).restart(),
+            150
+        );
+
         d.fx = d.x;
         d.fy = d.y;
-    
+
         this.dragTarget = d;
     }
-    
+
     _dragged(d) {
         d.fx = d3.event.x;
         d.fy = d3.event.y;
     }
-    
+
     _dragended(d) {
         clearTimeout(this._dragstarted.startSimulationTimeout);
         this.simulation.alphaTarget(0);
         d.fx = null;
         d.fy = null;
-    
+
         let dragTarget = this.dragTarget;
         this.dragTarget = null;
-    
+
         this._onMouseoutNode(dragTarget);
     }
 
@@ -435,11 +529,11 @@ class D3Graph {
     }
 
     _onClickNode(d) {
-        if (this.allNodes.find(n => n.id === d.id).isSelected) {
+        if (this.allNodes.find((n) => n.id === d.id).isSelected) {
             this.props.callbacks.deselect();
             return;
         }
-        
+
         this.props.callbacks.select(d);
 
         // Stops the underlying svg being clicked
@@ -447,10 +541,9 @@ class D3Graph {
     }
 }
 
-
 class D3Slider {
     constructor(domElement) {
-        this.domElement = domElement
+        this.domElement = domElement;
         this.d3Element = d3.select(this.domElement);
     }
 
@@ -461,8 +554,8 @@ class D3Slider {
             .sliderBottom()
             .min(start)
             .max(10)
-            .tickFormat(d => {
-                let num = d3.format(".1f")(d)
+            .tickFormat((d) => {
+                let num = d3.format(".1f")(d);
                 let [whole, fraction] = num.split(".");
                 return fraction === "0" ? whole : num;
             })
@@ -480,36 +573,30 @@ class D3Slider {
                 currentN = n;
                 callback(n);
             })
-            .handle(
-                d3
-                .symbol()
-                .type(d3.symbolCircle)
-                .size(200)()
-            );
-        
+            .handle(d3.symbol().type(d3.symbolCircle).size(200)());
+
         // Keep track of current slider value
         let currentN = roundToOneDecimal(this.d3Slider.value());
 
         this.d3Element
             .append("svg")
-                .attr("height", SLIDER_HEIGHT)
+            .attr("height", SLIDER_HEIGHT)
             .append("g")
-                .attr("transform", "translate(30,30)");
+            .attr("transform", "translate(30,30)");
     }
 
     resize(width) {
         this.d3Slider.width(Math.floor(0.9 * width) - 60);
-        
+
         this.d3Element
             .style("width", width + "px")
             .select("svg")
-                .attr("width", Math.floor(0.9 * width))
-                .select("g")
-                .call(this.d3Slider);
+            .attr("width", Math.floor(0.9 * width))
+            .select("g")
+            .call(this.d3Slider);
     }
 }
 
-
 export default {
-    D3Graph: D3Graph
+    D3Graph: D3Graph,
 };

@@ -1,13 +1,18 @@
-import React, {useState, useRef, useEffect, useCallback} from 'react';
-import Split from 'react-split';
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import Split from "react-split";
 
-import File from './file'
+import File from "./file";
 
-import '../matchview.css';
-import '../../split.css';
+import "../matchview.css";
+import "../../split.css";
 
-
-function SplitView({settings, matchData, spanManager, topHeight}) {
+function SplitView({
+    settings,
+    matchData,
+    similarities,
+    dispatchSimilarities,
+    topHeight,
+}) {
     const [interactionBlocked, setInteractionBlocked] = useState(false);
     const match = matchData.match;
 
@@ -21,39 +26,66 @@ function SplitView({settings, matchData, spanManager, topHeight}) {
             direction="horizontal"
             cursor="col-resize"
             style={{
-                "height":"100%"
+                height: "100%",
             }}
         >
-            {[[match.filesA(), match.subA], [match.filesB(), match.subB]].map(([files, sub], i) =>
-                <div key={`side_${i}`} style={{"height":"100%", "margin":0, "float":"left"}}>
+            {[
+                [match.filesA(), match.subA],
+                [match.filesB(), match.subB],
+            ].map(([files, sub], i) => (
+                <div
+                    key={`side_${i}`}
+                    style={{ height: "100%", margin: 0, float: "left" }}
+                >
                     <Side
                         submission={sub}
                         files={files}
                         isInteractionBlocked={interactionBlocked}
                         setInteractionBlocked={setInteractionBlocked}
-                        spanManager={spanManager}
+                        similarities={similarities}
+                        dispatchSimilarities={dispatchSimilarities}
                         settings={settings}
                         topHeight={topHeight}
                     />
                 </div>
-            )}
+            ))}
         </Split>
-    )
+    );
 }
 
-
-function Side({submission, files, isInteractionBlocked, setIsInteractionBlocked, spanManager, settings, topHeight}) {
+function Side({
+    submission,
+    files,
+    isInteractionBlocked,
+    setIsInteractionBlocked,
+    similarities,
+    dispatchSimilarities,
+    settings,
+    topHeight,
+}) {
     const [fileInView, updateFileVisibility] = useMax();
 
     const [fileCoverages, setFileCoverages] = useState({});
 
-    const numMatchedChars = Object.values(fileCoverages).reduce((acc, {numMatchedChars}) => acc + numMatchedChars, 0);
-    const numChars = Object.values(fileCoverages).reduce((acc, {numChars}) => acc + numChars, 0);
-    const submissionPercentage = (numMatchedChars / numChars * 100).toFixed(0);
+    const numMatchedChars = Object.values(fileCoverages).reduce(
+        (acc, { numMatchedChars }) => acc + numMatchedChars,
+        0
+    );
+    const numChars = Object.values(fileCoverages).reduce(
+        (acc, { numChars }) => acc + numChars,
+        0
+    );
+    const submissionPercentage = ((numMatchedChars / numChars) * 100).toFixed(
+        0
+    );
 
     const ref = useRef(null);
 
-    const scrollToCallback = useScroll(ref, spanManager, setIsInteractionBlocked);
+    const scrollToCallback = useScroll(
+        ref,
+        similarities,
+        setIsInteractionBlocked
+    );
 
     return (
         <div className="column-box">
@@ -62,15 +94,20 @@ function Side({submission, files, isInteractionBlocked, setIsInteractionBlocked,
                     filepath={submission.name}
                     percentage={submissionPercentage}
                     file={fileInView}
-                    height={topHeight}/>
+                    height={topHeight}
+                />
             </div>
-            <div ref={ref} className="scrollable-side row fill" style={{"overflow":"scroll"}}>
-                <div style={{"paddingLeft":".5em"}}>
-                    {files.map((file, i) =>
+            <div
+                ref={ref}
+                className="scrollable-side row fill"
+                style={{ overflow: "scroll" }}
+            >
+                <div style={{ paddingLeft: ".5em" }}>
+                    {files.map((file, i) => (
                         <File
                             key={file.name}
                             file={file}
-                            spanManager={spanManager}
+                            similarities={similarities}
                             softWrap={settings.isSoftWrapped}
                             hideIgnored={settings.isIgnoredHidden}
                             showWhiteSpace={!settings.isWhiteSpaceHidden}
@@ -82,14 +119,13 @@ function Side({submission, files, isInteractionBlocked, setIsInteractionBlocked,
                             scrollTo={scrollToCallback}
                             interactionBlocked={isInteractionBlocked}
                         />
-                    )}
-                    <div style={{"height":"75vh"}}></div>
+                    ))}
+                    <div style={{ height: "75vh" }}></div>
                 </div>
             </div>
         </div>
-    )
+    );
 }
-
 
 function StatusBar(props) {
     const filepathRef = useRef(null);
@@ -99,35 +135,47 @@ function StatusBar(props) {
     });
 
     return (
-        <div className="row-box" style={{
-            "fontWeight":"bold",
-            "height":props.height,
-            "lineHeight":props.height
-        }}>
-            <div ref={filepathRef} className="row fill" style={{
-                "overflowY":"hidden",
-                "overflowX":"auto",
-                "marginRight":"5px",
-                "paddingLeft":".5em"
-            }}>
+        <div
+            className="row-box"
+            style={{
+                fontWeight: "bold",
+                height: props.height,
+                lineHeight: props.height,
+            }}
+        >
+            <div
+                ref={filepathRef}
+                className="row fill"
+                style={{
+                    overflowY: "hidden",
+                    overflowX: "auto",
+                    marginRight: "5px",
+                    paddingLeft: ".5em",
+                }}
+            >
                 {props.filepath}
             </div>
-            <div className="row auto" style={{
-                "width":"4em",
-                "textAlign":"center"
-            }}>
+            <div
+                className="row auto"
+                style={{
+                    width: "4em",
+                    textAlign: "center",
+                }}
+            >
                 {`${props.percentage}%`}
             </div>
-            <div className="row auto" style={{
-                "width":"10em",
-                "textAlign":"center"
-            }}>
+            <div
+                className="row auto"
+                style={{
+                    width: "10em",
+                    textAlign: "center",
+                }}
+            >
                 {props.file}
             </div>
         </div>
-    )
+    );
 }
-
 
 function useMax() {
     const [maxItem, setMaxItem] = useState(undefined);
@@ -135,37 +183,41 @@ function useMax() {
     const values = useRef({});
 
     // Callback for when the value of an item changes
-    const update = useCallback((item, value) => {
-        values.current[item] = value;
+    const update = useCallback(
+        (item, value) => {
+            values.current[item] = value;
 
-        // Find the item with the highest value
-        let newMaxItem = item;
-        let newMaxValue = 0;
-        Object.entries(values.current).forEach(([item, value]) => {
-            if (value > newMaxValue) {
-                newMaxItem = item;
-                newMaxValue = value;
+            // Find the item with the highest value
+            let newMaxItem = item;
+            let newMaxValue = 0;
+            Object.entries(values.current).forEach(([item, value]) => {
+                if (value > newMaxValue) {
+                    newMaxItem = item;
+                    newMaxValue = value;
+                }
+            });
+
+            // If the item with the highest value is different from the last, update maxItem
+            if (newMaxItem !== maxItem) {
+                setMaxItem(newMaxItem);
             }
-        });
-
-        // If the item with the highest value is different from the last, update maxItem
-        if (newMaxItem !== maxItem) {
-            setMaxItem(newMaxItem);
-        }
-    }, [maxItem]);
+        },
+        [maxItem]
+    );
 
     return [maxItem, update];
 }
 
-
-function useScroll(scrollableRef, spanManager, setInteractionBlocked) {
+function useScroll(scrollableRef, similarities, setInteractionBlocked) {
     const didScroll = useRef(false);
 
-    const highlightedSpans = spanManager.highlightedSpans().map(span => span.id);
+    const highlightedSpans = similarities
+        .highlightedSpans()
+        .map((span) => span.id);
     const prevHighlightedSpans = useRef(highlightedSpans);
 
     const highlightChanged =
-        highlightedSpans.length !== prevHighlightedSpans.current.length || 
+        highlightedSpans.length !== prevHighlightedSpans.current.length ||
         highlightedSpans.some((s, i) => s !== prevHighlightedSpans.current[i]);
 
     // In case the highlighted spans changed, re-enable scrolling
@@ -174,17 +226,19 @@ function useScroll(scrollableRef, spanManager, setInteractionBlocked) {
         prevHighlightedSpans.current = highlightedSpans;
     }
 
-    const scrollToCallback = useCallback(domElement => {
-        if (didScroll.current) {
-            return;
-        }
-        didScroll.current = true;
-        scrollTo(domElement, scrollableRef.current, setInteractionBlocked);
-    }, [scrollableRef, setInteractionBlocked]);
+    const scrollToCallback = useCallback(
+        (domElement) => {
+            if (didScroll.current) {
+                return;
+            }
+            didScroll.current = true;
+            scrollTo(domElement, scrollableRef.current, setInteractionBlocked);
+        },
+        [scrollableRef, setInteractionBlocked]
+    );
 
     return scrollToCallback;
 }
-
 
 function findPos(domElement) {
     let obj = domElement;
@@ -198,7 +252,6 @@ function findPos(domElement) {
     return curtop;
 }
 
-
 // Custom implementation/hack of element.scrollIntoView();
 // Because safari does not support smooth scrolling @ July 27 2018
 // Update @ July 29 2020, still no smooth scrolling in Safari
@@ -206,12 +259,17 @@ function findPos(domElement) {
 //     this.dom_element.scrollIntoView({"behavior":"smooth"});
 // Also see: https://github.com/iamdustan/smoothscroll
 // Credits: https://gist.github.com/andjosh/6764939
-function scrollTo(domElement, scrollable=document, setInteractionBlock=block => {}, offset=200) {
+function scrollTo(
+    domElement,
+    scrollable = document,
+    setInteractionBlock = (block) => {},
+    offset = 200
+) {
     let easeInOutQuad = (t, b, c, d) => {
         t /= d / 2;
-        if (t < 1) return c / 2 * t * t + b;
+        if (t < 1) return (c / 2) * t * t + b;
         t--;
-        return -c / 2 * (t * (t - 2) - 1) + b;
+        return (-c / 2) * (t * (t - 2) - 1) + b;
     };
 
     let to = findPos(domElement) - offset;
@@ -229,8 +287,7 @@ function scrollTo(domElement, scrollable=document, setInteractionBlock=block => 
         scrollable.scrollTop = val;
         if (currentTime < duration) {
             setTimeout(animateScroll, increment);
-        }
-        else {
+        } else {
             setInteractionBlock(false);
         }
     };
@@ -239,5 +296,4 @@ function scrollTo(domElement, scrollable=document, setInteractionBlock=block => 
     animateScroll();
 }
 
-
-export default SplitView
+export default SplitView;
