@@ -168,6 +168,38 @@ function selectPreviousGroup(similarities) {
     return select(similarities, firstSpanIngroup);
 }
 
+function activate(similarities, region) {
+    const selectedSpan = similarities.getSpan(region);
+
+    const groupId = selectedSpan.groupId;
+
+    if (groupId === null) {
+        return;
+    }
+
+    const spanStates = similarities.spans.reduce((acc, span) => {
+        // Don't overwrite a selected span
+        if (
+            similarities._spanStates[span.id] === Span.STATES.SELECTED ||
+            similarities._spanStates[span.id] === Span.STATES.HIGHLIGHTED
+        ) {
+            acc[span.id] = similarities._spanStates[span.id];
+        }
+        // Set all spans in group to
+        else if (span.groupId === groupId) {
+            acc[span.id] = Span.STATES.ACTIVE;
+        }
+        // Set everything else to inactive
+        else {
+            acc[span.id] = Span.STATES.INACTIVE;
+        }
+
+        return acc;
+    }, {});
+
+    return spanStates;
+}
+
 function useSimilarities() {
     const reduce = (state, action) => {
         switch (action.type) {
@@ -190,8 +222,11 @@ function useSimilarities() {
                     ...state,
                     spanStates: selectPreviousGroup(wrap(state)),
                 };
-            // case 'activate':
-            //     return activate(state, action.value);
+            case "activate":
+                return {
+                    ...state,
+                    spanStates: activate(wrap(state), action.payload),
+                };
             case "select":
                 return {
                     ...state,
@@ -243,38 +278,6 @@ class Similarities {
 
         // Change _spanStates (triggers a rerender)
         this._setSpanStates = setSpanStates;
-    }
-
-    activate(region) {
-        const selectedSpan = this.getSpan(region);
-
-        const groupId = selectedSpan.groupId;
-
-        if (groupId === null) {
-            return;
-        }
-
-        const spanStates = this.spans.reduce((acc, span) => {
-            // Don't overwrite a selected span
-            if (
-                this._spanStates[span.id] === Span.STATES.SELECTED ||
-                this._spanStates[span.id] === Span.STATES.HIGHLIGHTED
-            ) {
-                acc[span.id] = this._spanStates[span.id];
-            }
-            // Set all spans in group to
-            else if (span.groupId === groupId) {
-                acc[span.id] = Span.STATES.ACTIVE;
-            }
-            // Set everything else to inactive
-            else {
-                acc[span.id] = Span.STATES.INACTIVE;
-            }
-
-            return acc;
-        }, {});
-
-        this._setSpanStates(spanStates);
     }
 
     isFirstInHighlightedSpan(region) {

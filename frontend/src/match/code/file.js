@@ -119,7 +119,12 @@ function Fragment({
             key={id}
             onMouseEnter={
                 hasMouseOvers
-                    ? () => similarities.activate(fragment)
+                    ? () => {
+                          dispatchSimilarities({
+                              type: "activate",
+                              payload: fragment,
+                          });
+                      }
                     : undefined
             }
             onMouseDown={
