@@ -464,41 +464,5 @@ class Span {
     }
 }
 
-function useSpanManager(pass, match) {
-    // const unselectSpanStates = spanStates => {
-    //     Object.keys(spanStates).forEach(spanId => {
-    //         if (spanStates[spanId] === Span.STATES.SELECTED || spanStates[spanId] === Span.STATES.HIGHLIGHTED) {
-    //             spanStates[spanId] = Span.STATES.INACTIVE;
-    //         }
-    //     });
-    //     return spanStates;
-    // }
-    // // Memoize the (expensive) mapping from regions to spans on the selected pass
-    // const regionMap = useMemo(() => initRegionMap(match, pass), [pass.name]);
-    // // Memoize the (expensive) mapping from regions to ignoredSpans on the selected pass
-    // const ignoredRegionMap = useMemo(() => initIgnoredRegionMap(pass), [pass.name]);
-    // // A map from pass.name => span.id => state
-    // const [allSpanStates, setAllSpanStates] = useState({});
-    // // Keep track of the last pass
-    // const passRef = useRef(pass);
-    // // Retrieve the spanStates from the map, otherwise create new
-    // let spanStates = allSpanStates[pass.name]
-    // if (spanStates === undefined) {
-    //     spanStates = initSpanStates(regionMap);
-    // }
-    // // In case pass changed, unselect everything in the new pass
-    // if (passRef.current !== pass) {
-    //     passRef.current = pass;
-    //     spanStates = unselectSpanStates(spanStates);
-    // }
-    // // Callback to set the spanStates for the current pass
-    // const setSpanStates = spanStates => {
-    //     const temp = {}
-    //     temp[pass.name] = {...(allSpanStates[pass.name]), ...spanStates}
-    //     setAllSpanStates({...allSpanStates, ...temp})
-    // };
-    // return new SpanManager(regionMap, ignoredRegionMap, spanStates, setSpanStates);
-}
-
-export { Span, useSimilarities };
-export default useSpanManager;
+export { Span };
+export default useSimilarities;

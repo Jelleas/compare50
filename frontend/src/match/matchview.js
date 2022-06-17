@@ -5,7 +5,7 @@ import SideBar from "./sidebar";
 import SplitView from "./code/splitview";
 
 import API from "../api";
-import useSpanManager, { useSimilarities } from "./spanmanager";
+import useSimilarities from "./similarities";
 
 function useMatchData() {
     const reduce = (state, action) => {
