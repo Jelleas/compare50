@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import createFragments from "./fragmentslicer";
+import React, { useRef, useEffect, useMemo } from "react";
 
 import "../../matchview.css";
 import "./file.css";
+import useFragments from "./useFragments";
 
 function File({
     file,
@@ -22,6 +22,7 @@ function File({
     );
 
     const coverage = useCoverage(fragments, similarities);
+
     const percentage = (
         (coverage.numMatchedChars / coverage.numChars) *
         100
@@ -195,31 +196,19 @@ function getClassName(fragment, similarities, hideIgnored) {
     return classNames.join(" ");
 }
 
-function useFragments(file, spans, ignoredSpans) {
-    return useMemo(() => {
-        const fromFile = (span) => span.fileId === file.id;
-        const spansFromFile = spans.filter(fromFile);
-        const ignoredSpansFromFile = ignoredSpans.filter(fromFile);
-        const allSpans = spansFromFile.concat(ignoredSpansFromFile);
-        return createFragments(file, allSpans);
-    }, [file, spans, ignoredSpans]);
-}
-
 function useCoverage(fragments, similarities) {
     const compute = () => {
         let numChars = 0;
         let numMatchedChars = 0;
-        fragments.forEach((fragment) => {
-            if (similarities.isIgnored(fragment)) {
-                return;
-            }
-
-            const size = fragment.end - fragment.start;
-            if (similarities.isGrouped(fragment)) {
-                numMatchedChars += size;
-            }
-            numChars += size;
-        });
+        fragments
+            .filter((frag) => !similarities.isIgnored(frag))
+            .forEach((fragment) => {
+                const size = fragment.end - fragment.start;
+                if (similarities.isGrouped(fragment)) {
+                    numMatchedChars += size;
+                }
+                numChars += size;
+            });
 
         return {
             numMatchedChars: numMatchedChars,

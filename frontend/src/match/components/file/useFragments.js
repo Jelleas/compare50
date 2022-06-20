@@ -1,3 +1,15 @@
+import { useMemo } from "react";
+
+function useFragments(file, spans, ignoredSpans) {
+    return useMemo(() => {
+        const fromFile = (span) => span.fileId === file.id;
+        const spansFromFile = spans.filter(fromFile);
+        const ignoredSpansFromFile = ignoredSpans.filter(fromFile);
+        const allSpans = spansFromFile.concat(ignoredSpansFromFile);
+        return createFragments(file, allSpans);
+    }, [file, spans, ignoredSpans]);
+}
+
 class Fragment {
     constructor(file, start, end) {
         this.fileId = file.id;
@@ -31,7 +43,7 @@ function slice(file, spans) {
     return fragments;
 }
 
-// Spans of individual spaces are never relevant for the view,
+// Spans of individual spaces (" ") are never relevant for the view,
 // but do cause many more fragments to be created.
 // For performance reasons, this filters out any spans containing just a space.
 function filterIgnoredWhitespaceSpans(file, spans) {
@@ -47,4 +59,4 @@ function createFragments(file, spans) {
     return slice(file, filterIgnoredWhitespaceSpans(file, spans));
 }
 
-export default createFragments;
+export default useFragments;
