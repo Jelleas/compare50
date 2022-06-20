@@ -1,5 +1,64 @@
 import { useReducer } from "react";
 
+function useSimilarities() {
+    const reduce = (state, action) => {
+        switch (action.type) {
+            case "set":
+                const { match, pass } = action.payload;
+                const regionMap = initRegionMap(match, pass);
+                const ignoredRegionMap = initIgnoredRegionMap(pass);
+                const spanStates = initSpanStates(regionMap);
+                return {
+                    pass: pass,
+                    match: match,
+                    regionMap: regionMap,
+                    ignoredRegionMap: ignoredRegionMap,
+                    spanStates: spanStates,
+                };
+            case "selectNextGroup":
+                return { ...state, spanStates: selectNextGroup(wrap(state)) };
+            case "selectPreviousGroup":
+                return {
+                    ...state,
+                    spanStates: selectPreviousGroup(wrap(state)),
+                };
+            case "activate":
+                return {
+                    ...state,
+                    spanStates: activate(wrap(state), action.payload),
+                };
+            case "select":
+                return {
+                    ...state,
+                    spanStates: select(wrap(state), action.payload),
+                };
+            // case 'reset':
+            //     return reset(state);
+            default:
+                throw new Error(`unknown action type ${action.type}`);
+        }
+    };
+
+    const wrap = ({ pass, match, regionMap, ignoredRegionMap, spanStates }) => {
+        return new Similarities(
+            regionMap,
+            ignoredRegionMap,
+            spanStates,
+            () => null
+        );
+    };
+
+    const [similaritiesState, dispatch] = useReducer(reduce, {
+        pass: null,
+        match: null,
+        regionMap: initRegionMap(),
+        ignoredRegionMap: initIgnoredRegionMap(),
+        spanStates: [],
+    });
+
+    return [wrap(similaritiesState), dispatch];
+}
+
 function initRegionMap(match, pass) {
     if (match == null || pass == null) {
         return new RegionMap([]);
@@ -198,65 +257,6 @@ function activate(similarities, region) {
     }, {});
 
     return spanStates;
-}
-
-function useSimilarities() {
-    const reduce = (state, action) => {
-        switch (action.type) {
-            case "set":
-                const { match, pass } = action.payload;
-                const regionMap = initRegionMap(match, pass);
-                const ignoredRegionMap = initIgnoredRegionMap(pass);
-                const spanStates = initSpanStates(regionMap);
-                return {
-                    pass: pass,
-                    match: match,
-                    regionMap: regionMap,
-                    ignoredRegionMap: ignoredRegionMap,
-                    spanStates: spanStates,
-                };
-            case "selectNextGroup":
-                return { ...state, spanStates: selectNextGroup(wrap(state)) };
-            case "selectPreviousGroup":
-                return {
-                    ...state,
-                    spanStates: selectPreviousGroup(wrap(state)),
-                };
-            case "activate":
-                return {
-                    ...state,
-                    spanStates: activate(wrap(state), action.payload),
-                };
-            case "select":
-                return {
-                    ...state,
-                    spanStates: select(wrap(state), action.payload),
-                };
-            // case 'reset':
-            //     return reset(state);
-            default:
-                throw new Error(`unknown action type ${action.type}`);
-        }
-    };
-
-    const wrap = ({ pass, match, regionMap, ignoredRegionMap, spanStates }) => {
-        return new Similarities(
-            regionMap,
-            ignoredRegionMap,
-            spanStates,
-            () => null
-        );
-    };
-
-    const [similaritiesState, dispatch] = useReducer(reduce, {
-        pass: null,
-        match: null,
-        regionMap: initRegionMap(),
-        ignoredRegionMap: initIgnoredRegionMap(),
-        spanStates: [],
-    });
-
-    return [wrap(similaritiesState), dispatch];
 }
 
 /*

@@ -51,7 +51,6 @@ function File({
             <Fragment
                 key={id}
                 fragment={frag}
-                fileId={file.id}
                 id={id}
                 onNewline={onNewline}
                 hideIgnored={hideIgnored}
@@ -107,7 +106,7 @@ function Fragment({
         }
     });
 
-    let className = getClassName(fragment, similarities, hideIgnored);
+    const className = getClassName(fragment, similarities, hideIgnored);
 
     const hasMouseOvers =
         !interactionBlocked && similarities.isGrouped(fragment);
@@ -186,9 +185,9 @@ function replaceLeadingWhitespace(line) {
     return newLine;
 }
 
-function getClassName(fragment, spanManager, hideIgnored) {
+function getClassName(fragment, similarities, hideIgnored) {
     const classNames = [];
-    if (spanManager.isIgnored(fragment)) {
+    if (similarities.isIgnored(fragment)) {
         if (hideIgnored) {
             classNames.push("invisible-span");
         } else {
@@ -196,13 +195,13 @@ function getClassName(fragment, spanManager, hideIgnored) {
         }
     }
 
-    if (spanManager.isHighlighted(fragment)) {
+    if (similarities.isHighlighted(fragment)) {
         classNames.push("highlighted-span");
-    } else if (spanManager.isActive(fragment)) {
+    } else if (similarities.isActive(fragment)) {
         classNames.push("active-span");
-    } else if (spanManager.isSelected(fragment)) {
+    } else if (similarities.isSelected(fragment)) {
         classNames.push("selected-span");
-    } else if (spanManager.isGrouped(fragment)) {
+    } else if (similarities.isGrouped(fragment)) {
         classNames.push("grouped-span");
     }
 
