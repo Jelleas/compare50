@@ -10,10 +10,8 @@ function File({
     dispatchSimilarities,
     updateCoverage,
     scrollTo,
-    hideIgnored,
-    showWhiteSpace,
-    softWrap,
-    interactionBlocked,
+    settings,
+    isInteractionBlocked,
 }) {
     const fragments = useFragments(
         file,
@@ -23,18 +21,18 @@ function File({
 
     const coverage = useCoverage(fragments, similarities);
 
-    const percentage = (
-        (coverage.numMatchedChars / coverage.numChars) *
-        100
-    ).toFixed(0);
-
     const _updateCoverage = updateCoverage;
     useEffect(() => {
         _updateCoverage(coverage);
     }, [coverage, _updateCoverage]);
 
+    const percentage = (
+        (coverage.numMatchedChars / coverage.numChars) *
+        100
+    ).toFixed(0);
+
     // Keep track of whether a line of code starts on a newline (necessary for line numbers through css)
-    let onNewline = true;
+    let isOnNewline = true;
 
     const fragmentElems = fragments.map((frag) => {
         const id = `frag_${file.id}_${frag.start}`;
@@ -43,16 +41,15 @@ function File({
                 key={id}
                 fragment={frag}
                 id={id}
-                onNewline={onNewline}
-                hideIgnored={hideIgnored}
-                showWhiteSpace={showWhiteSpace}
+                isOnNewline={isOnNewline}
+                settings={settings}
                 scrollTo={scrollTo}
                 similarities={similarities}
                 dispatchSimilarities={dispatchSimilarities}
-                interactionBlocked={interactionBlocked}
+                isInteractionBlocked={isInteractionBlocked}
             />
         );
-        onNewline = frag.text.endsWith("\n");
+        isOnNewline = frag.text.endsWith("\n");
         return fragElem;
     });
 
@@ -62,7 +59,12 @@ function File({
                 {" "}
                 {file.name} <span>{percentage}%</span>
             </h4>
-            <pre className={(softWrap ? "softwrap" : "") + " monospace-text"}>
+            <pre
+                className={
+                    (settings.isSoftWrapped ? "softwrap" : "") +
+                    " monospace-text"
+                }
+            >
                 {fragmentElems}
             </pre>
         </>
@@ -73,10 +75,9 @@ function Fragment({
     fragment,
     similarities,
     dispatchSimilarities,
-    hideIgnored,
-    interactionBlocked,
-    showWhiteSpace,
-    onNewline,
+    isInteractionBlocked,
+    settings,
+    isOnNewline,
     id,
     scrollTo,
 }) {
@@ -94,10 +95,14 @@ function Fragment({
         }
     });
 
-    const className = getClassName(fragment, similarities, hideIgnored);
+    const className = getClassName(
+        fragment,
+        similarities,
+        settings.isIgnoredHidden
+    );
 
     const hasMouseOvers =
-        !interactionBlocked && similarities.isGrouped(fragment);
+        !isInteractionBlocked && similarities.isGrouped(fragment);
 
     return (
         <span
@@ -136,10 +141,10 @@ function Fragment({
             }
         >
             {lines.map((line, lineIndex) => {
-                const isNewLine = onNewline || lineIndex > 0;
+                const isNewLine = isOnNewline || lineIndex > 0;
 
                 // If starting on a newline, make the leading whitespace visible
-                if (isNewLine && showWhiteSpace) {
+                if (isNewLine && !settings.isWhiteSpaceHidden) {
                     line = replaceLeadingWhitespace(line);
                 }
 

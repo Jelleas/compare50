@@ -64,15 +64,13 @@ function SubmissionView({
                                 file={file}
                                 similarities={similarities}
                                 dispatchSimilarities={dispatchSimilarities}
-                                softWrap={settings.isSoftWrapped}
-                                hideIgnored={settings.isIgnoredHidden}
-                                showWhiteSpace={!settings.isWhiteSpaceHidden}
+                                settings={settings}
                                 updateCoverage={(coverage) => {
                                     fileCoverages[file.id] = coverage;
                                     setFileCoverages(fileCoverages);
                                 }}
                                 scrollTo={scrollToCallback}
-                                interactionBlocked={isInteractionBlocked}
+                                isInteractionBlocked={isInteractionBlocked}
                             />
                         </TrackedVisibility>
                     ))}
