@@ -6,25 +6,15 @@ import "./file.css";
 
 function File({
     file,
-    updateFileVisibility,
     similarities,
     dispatchSimilarities,
     updateCoverage,
     scrollTo,
     hideIgnored,
     showWhiteSpace,
-    interactionBlocked,
     softWrap,
+    interactionBlocked,
 }) {
-    const [visibilityRef, entry] = useIntersect({
-        threshold: Array.from(Array(100).keys(), (i) => i / 100),
-    });
-
-    const _updateFileVisibility = updateFileVisibility;
-    useEffect(() => {
-        _updateFileVisibility(file.name, entry.intersectionRatio);
-    }, [file.name, _updateFileVisibility, entry.intersectionRatio]);
-
     const fragments = useFragments(
         file,
         similarities.spans,
@@ -71,10 +61,7 @@ function File({
                 {" "}
                 {file.name} <span>{percentage}%</span>
             </h4>
-            <pre
-                ref={visibilityRef}
-                className={(softWrap ? "softwrap" : "") + " monospace-text"}
-            >
+            <pre className={(softWrap ? "softwrap" : "") + " monospace-text"}>
                 {fragmentElems}
             </pre>
         </>
@@ -218,17 +205,17 @@ function useFragments(file, spans, ignoredSpans) {
     }, [file, spans, ignoredSpans]);
 }
 
-function useCoverage(fragments, spanManager) {
+function useCoverage(fragments, similarities) {
     const compute = () => {
         let numChars = 0;
         let numMatchedChars = 0;
         fragments.forEach((fragment) => {
-            if (spanManager.isIgnored(fragment)) {
+            if (similarities.isIgnored(fragment)) {
                 return;
             }
 
             const size = fragment.end - fragment.start;
-            if (spanManager.isGrouped(fragment)) {
+            if (similarities.isGrouped(fragment)) {
                 numMatchedChars += size;
             }
             numChars += size;
@@ -242,32 +229,5 @@ function useCoverage(fragments, spanManager) {
 
     return useMemo(compute, [fragments]);
 }
-
-// https://medium.com/the-non-traditional-developer/how-to-use-an-intersectionobserver-in-a-react-hook-9fb061ac6cb5
-const useIntersect = ({ root = null, rootMargin, threshold = 0 }) => {
-    const [entry, updateEntry] = useState({});
-    const [node, setNode] = useState(null);
-
-    const observer = useRef(
-        new window.IntersectionObserver(([entry]) => updateEntry(entry), {
-            root,
-            rootMargin,
-            threshold,
-        })
-    );
-
-    useEffect(() => {
-        const { current: currentObserver } = observer;
-        currentObserver.disconnect();
-
-        if (node) {
-            currentObserver.observe(node);
-        }
-
-        return () => currentObserver.disconnect();
-    }, [node]);
-
-    return [setNode, entry];
-};
 
 export default File;

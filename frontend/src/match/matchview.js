@@ -10,36 +10,6 @@ import useSettings from "./hooks/useSettings";
 
 import API from "../api";
 
-// function useMatchData() {
-//     const reduce = (state, action) => {
-//         switch (action.type) {
-//             case "new":
-//                 const { match } = action.payload;
-//                 return {
-//                     // match: match,
-//                     passes: match.passes,
-//                     isLoaded: true,
-//                     currentMatch: match.index(),
-//                     nMatches: match.numberOfMatches(),
-//                 };
-//             case "load":
-//                 return { ...state, isLoaded: null };
-//             default:
-//                 throw new Error(`unknown action type ${action.type}`);
-//         }
-//     };
-
-//     const [matchData, dispatch] = useReducer(reduce, {
-//         match: API.placeHolderMatch(),
-//         passes: [],
-//         isLoaded: false,
-//         currentMatch: 1,
-//         nMatches: 50,
-//     });
-
-//     return [matchData, dispatch];
-// }
-
 function MatchView() {
     const getData = () => {
         setIsLoaded(null);
@@ -93,7 +63,6 @@ function MatchView() {
                     settings={settings}
                     similarities={similarities}
                     dispatchSimilarities={dispatchSimilarities}
-                    topHeight="2.5em"
                 />
             </div>
         </div>
