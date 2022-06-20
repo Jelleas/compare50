@@ -6,7 +6,7 @@ import SubmissionView from "../submissionview";
 import "../../matchview.css";
 
 function SplitView({ settings, similarities, dispatchSimilarities }) {
-    const [interactionBlocked, setInteractionBlocked] = useState(false);
+    const [isInteractionBlocked, setIsInteractionBlocked] = useState(false);
     const match = similarities.match;
 
     return (
@@ -30,8 +30,8 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                     <SubmissionView
                         submission={sub}
                         files={sub.files}
-                        isInteractionBlocked={interactionBlocked}
-                        setInteractionBlocked={setInteractionBlocked}
+                        isInteractionBlocked={isInteractionBlocked}
+                        setIsInteractionBlocked={setIsInteractionBlocked}
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
                         settings={settings}
