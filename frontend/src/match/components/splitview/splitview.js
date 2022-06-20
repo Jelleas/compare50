@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Split from "react-split";
 
-import File from "./file";
+import File from "../file";
 
-import "../matchview.css";
-import "../../split.css";
+import "../../matchview.css";
 
 function SplitView({
     settings,

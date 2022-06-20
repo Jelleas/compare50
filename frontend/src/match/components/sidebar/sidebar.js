@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import ReactTooltip from "react-tooltip";
 
-import Graph from "../graph/graph";
-import Logo from "../logo";
-import render50 from "./code/render50";
+import Graph from "../../../graph/graph";
+import Logo from "../../../logo";
+import render50 from "../../render50";
 
-import "./matchview.css";
+import "../../matchview.css";
 import "./sidebar.css";
 
 function SideBar({
@@ -90,7 +90,7 @@ function SideBar({
                 <div className="row auto" style={style}>
                     <ExportMenu match={matchData.match} />
                 </div>
-                {settings.isDataLoaded && (
+                {matchData.isLoaded && (
                     <SideGraph
                         graph={graphData}
                         subAId={matchData.match.subA.id}

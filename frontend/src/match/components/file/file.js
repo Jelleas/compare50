@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import createFragments from "./fragmentslicer";
 
-import "../matchview.css";
+import "../../matchview.css";
 import "./file.css";
 
 function File({

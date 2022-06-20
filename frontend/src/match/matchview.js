@@ -1,11 +1,14 @@
 import React, { useState, useReducer } from "react";
 
 import "./matchview.css";
-import SideBar from "./sidebar";
-import SplitView from "./code/splitview";
+
+import SideBar from "./components/sidebar";
+import SplitView from "./components/splitview";
+
+import useSimilarities from "./hooks/useSimilarities";
+import useSettings from "./hooks/useSettings";
 
 import API from "../api";
-import useSimilarities from "./similarities";
 
 function useMatchData() {
     const reduce = (state, action) => {
@@ -47,23 +50,6 @@ function useMatchData() {
     });
 
     return [matchData, dispatch];
-}
-
-function useSettings() {
-    const [settings, setSettings] = useState({
-        isSoftWrapped: true,
-        isWhiteSpaceHidden: true,
-        isIgnoredHidden: false,
-    });
-
-    const setSetting = (key, value) =>
-        setSettings((settings) => {
-            const newSettings = { ...settings };
-            newSettings[key] = value;
-            setSettings(newSettings);
-        });
-
-    return [settings, setSetting];
 }
 
 function MatchView() {
