@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from "react";
+import React, { useState } from "react";
 
 import "./matchview.css";
 
@@ -10,77 +10,62 @@ import useSettings from "./hooks/useSettings";
 
 import API from "../api";
 
-function useMatchData() {
-    const reduce = (state, action) => {
-        switch (action.type) {
-            case "new":
-                const { match, pass } = action.payload;
-                return {
-                    currentPass: pass,
-                    match: match,
-                    passes: match.passes,
-                    isLoaded: true,
-                    currentMatch: match.index(),
-                    nMatches: match.numberOfMatches(),
-                };
-            case "load":
-                return { ...state, isLoaded: null };
-            case "setPass":
-                return { ...state, currentPass: action.payload };
-            case "setGroup":
-                return { ...state, currentGroup: action.payload };
-            default:
-                throw new Error(`unknown action type ${action.type}`);
-        }
-    };
+// function useMatchData() {
+//     const reduce = (state, action) => {
+//         switch (action.type) {
+//             case "new":
+//                 const { match } = action.payload;
+//                 return {
+//                     // match: match,
+//                     passes: match.passes,
+//                     isLoaded: true,
+//                     currentMatch: match.index(),
+//                     nMatches: match.numberOfMatches(),
+//                 };
+//             case "load":
+//                 return { ...state, isLoaded: null };
+//             default:
+//                 throw new Error(`unknown action type ${action.type}`);
+//         }
+//     };
 
-    const [matchData, dispatch] = useReducer(reduce, {
-        match: API.placeHolderMatch(),
-        currentPass: {
-            name: "",
-            docs: "",
-            score: "",
-            spans: [],
-            groups: [],
-        },
-        passes: [],
-        nMatches: 50,
-        currentMatch: 1,
-        isLoaded: false,
-    });
+//     const [matchData, dispatch] = useReducer(reduce, {
+//         match: API.placeHolderMatch(),
+//         passes: [],
+//         isLoaded: false,
+//         currentMatch: 1,
+//         nMatches: 50,
+//     });
 
-    return [matchData, dispatch];
-}
+//     return [matchData, dispatch];
+// }
 
 function MatchView() {
-    const getData = function () {
-        dispatchMatchData({ type: "load" });
-
+    const getData = () => {
+        setIsLoaded(null);
         Promise.all([API.getMatch(), API.getGraph()]).then(([match, graph]) => {
             setGraph(graph);
-            const pass = match.passes[0];
-            dispatchMatchData({
-                type: "new",
-                payload: { match: match, pass: pass },
-            });
             dispatchSimilarities({
                 type: "set",
-                payload: { match: match, pass: pass },
+                payload: { match: match, pass: match.passes[0] },
             });
+            setIsLoaded(true);
         });
     };
 
     const [settings, setSetting] = useSettings();
 
-    const [matchData, dispatchMatchData] = useMatchData();
+    const [isLoaded, setIsLoaded] = useState(false);
 
     const [graphData, setGraph] = useState({});
 
-    // const spanManager = useSpanManager(matchData.currentPass, matchData.match);
+    const placeHolderMatch = API.placeHolderMatch();
+    const [similarities, dispatchSimilarities] = useSimilarities(
+        placeHolderMatch,
+        placeHolderMatch.passes[0]
+    );
 
-    const [similarities, dispatchSimilarities] = useSimilarities();
-
-    if (matchData.isLoaded === false) {
+    if (isLoaded === false) {
         getData();
     }
 
@@ -93,12 +78,11 @@ function MatchView() {
                 >
                     <div className="row fill">
                         <SideBar
+                            isLoaded={isLoaded}
                             settings={settings}
                             setSetting={setSetting}
-                            matchData={matchData}
-                            dispatchMatchData={dispatchMatchData}
-                            spanManager={similarities}
-                            dispatchRegions={dispatchSimilarities}
+                            similarities={similarities}
+                            dispatchSimilarities={dispatchSimilarities}
                             graphData={graphData}
                         />
                     </div>
@@ -107,7 +91,6 @@ function MatchView() {
             <div className="row fill">
                 <SplitView
                     settings={settings}
-                    matchData={matchData}
                     similarities={similarities}
                     dispatchSimilarities={dispatchSimilarities}
                     topHeight="2.5em"

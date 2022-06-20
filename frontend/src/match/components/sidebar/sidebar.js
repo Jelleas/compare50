@@ -9,12 +9,11 @@ import "../../matchview.css";
 import "./sidebar.css";
 
 function SideBar({
+    isLoaded,
     settings,
     setSetting,
-    matchData,
-    dispatchMatchData,
-    spanManager,
-    dispatchRegions,
+    similarities,
+    dispatchSimilarities,
     graphData,
 }) {
     const style = {
@@ -24,8 +23,10 @@ function SideBar({
         width: "90%",
     };
 
+    const match = similarities.match;
+
     return (
-        <React.Fragment>
+        <>
             <ReactTooltip
                 place="right"
                 type="dark"
@@ -38,37 +39,34 @@ function SideBar({
                 </div>
                 <div className="row auto" style={style}>
                     <MatchNavigation
-                        current={matchData.currentMatch}
-                        n={matchData.nMatches}
+                        current={match.index()}
+                        n={match.numberOfMatches()}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <PassNavigation
-                        passes={matchData.passes}
-                        currentPass={matchData.currentPass}
+                        passes={match.passes}
+                        currentPass={similarities.pass}
                         setPass={(pass) => {
-                            dispatchMatchData({
+                            dispatchSimilarities({
                                 type: "setPass",
                                 payload: pass,
-                            });
-                            dispatchRegions({
-                                type: "set",
-                                payload: { match: matchData.match, pass: pass },
                             });
                         }}
                     />
                 </div>
                 <div className="row auto" style={style}>
                     <GroupNavigation
-                        index={spanManager.selectedGroupIndex() + 1}
-                        total={spanManager.nGroups()}
+                        index={similarities.selectedGroupIndex() + 1}
+                        total={similarities.nGroups()}
                         gotoNext={() =>
-                            dispatchRegions({ type: "selectNextGroup" })
+                            dispatchSimilarities({ type: "selectNextGroup" })
                         }
                         gotoPrevious={() =>
-                            dispatchRegions({ type: "selectPreviousGroup" })
+                            dispatchSimilarities({
+                                type: "selectPreviousGroup",
+                            })
                         }
-                        spanManager={spanManager}
                     />
                 </div>
                 <div className="row auto" style={style}>
@@ -88,17 +86,17 @@ function SideBar({
                     />
                 </div>
                 <div className="row auto" style={style}>
-                    <ExportMenu match={matchData.match} />
+                    <ExportMenu match={match} />
                 </div>
-                {matchData.isLoaded && (
+                {isLoaded && (
                     <SideGraph
                         graph={graphData}
-                        subAId={matchData.match.subA.id}
-                        subBId={matchData.match.subB.id}
+                        subAId={match.subA.id}
+                        subBId={match.subB.id}
                     />
                 )}
             </div>
-        </React.Fragment>
+        </>
     );
 }
 
@@ -225,7 +223,7 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
     );
 }
 
-function MatchNavigation(props) {
+function MatchNavigation({ current, n }) {
     return (
         <div>
             <div
@@ -237,7 +235,7 @@ function MatchNavigation(props) {
                     color: "black",
                 }}
             >
-                {formatFraction(props.current, props.n)}
+                {formatFraction(current, n)}
             </div>
             <div
                 className="btn-group horizontal"
@@ -250,9 +248,9 @@ function MatchNavigation(props) {
                         style={{ width: "50%" }}
                         onClick={() =>
                             (window.location.href =
-                                "match_" + (props.current - 1) + ".html")
+                                "match_" + (current - 1) + ".html")
                         }
-                        disabled={props.current === 1}
+                        disabled={current === 1}
                     >
                         {"<<"}
                     </button>
@@ -263,9 +261,9 @@ function MatchNavigation(props) {
                         style={{ width: "50%" }}
                         onClick={() =>
                             (window.location.href =
-                                "match_" + (props.current + 1) + ".html")
+                                "match_" + (current + 1) + ".html")
                         }
-                        disabled={props.current === props.n}
+                        disabled={current === n}
                     >
                         {">>"}
                     </button>

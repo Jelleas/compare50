@@ -7,13 +7,12 @@ import "../../matchview.css";
 
 function SplitView({
     settings,
-    matchData,
     similarities,
     dispatchSimilarities,
     topHeight,
 }) {
     const [interactionBlocked, setInteractionBlocked] = useState(false);
-    const match = matchData.match;
+    const match = similarities.match;
 
     return (
         <Split

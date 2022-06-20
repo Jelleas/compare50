@@ -1,20 +1,13 @@
 import { useReducer } from "react";
 
-function useSimilarities() {
+function useSimilarities(match, pass) {
     const reduce = (state, action) => {
         switch (action.type) {
             case "set":
                 const { match, pass } = action.payload;
-                const regionMap = initRegionMap(match, pass);
-                const ignoredRegionMap = initIgnoredRegionMap(pass);
-                const spanStates = initSpanStates(regionMap);
-                return {
-                    pass: pass,
-                    match: match,
-                    regionMap: regionMap,
-                    ignoredRegionMap: ignoredRegionMap,
-                    spanStates: spanStates,
-                };
+                return set(match, pass);
+            case "setPass":
+                return set(state.match, action.payload);
             case "selectNextGroup":
                 return { ...state, spanStates: selectNextGroup(wrap(state)) };
             case "selectPreviousGroup":
@@ -32,15 +25,28 @@ function useSimilarities() {
                     ...state,
                     spanStates: select(wrap(state), action.payload),
                 };
-            // case 'reset':
-            //     return reset(state);
             default:
                 throw new Error(`unknown action type ${action.type}`);
         }
     };
 
+    const set = (match, pass) => {
+        const regionMap = initRegionMap(match, pass);
+        const ignoredRegionMap = initIgnoredRegionMap(pass);
+        const spanStates = initSpanStates(regionMap);
+        return {
+            pass: pass,
+            match: match,
+            regionMap: regionMap,
+            ignoredRegionMap: ignoredRegionMap,
+            spanStates: spanStates,
+        };
+    };
+
     const wrap = ({ pass, match, regionMap, ignoredRegionMap, spanStates }) => {
         return new Similarities(
+            pass,
+            match,
             regionMap,
             ignoredRegionMap,
             spanStates,
@@ -49,8 +55,8 @@ function useSimilarities() {
     };
 
     const [similaritiesState, dispatch] = useReducer(reduce, {
-        pass: null,
-        match: null,
+        pass: pass,
+        match: match,
         regionMap: initRegionMap(),
         ignoredRegionMap: initIgnoredRegionMap(),
         spanStates: [],
@@ -266,7 +272,10 @@ function activate(similarities, region) {
  * {fileId: 1, start: 0, end: 10}
  */
 class Similarities {
-    constructor(regionMap, ignoredRegionMap, spanStates, setSpanStates) {
+    constructor(pass, match, regionMap, ignoredRegionMap, spanStates) {
+        this.pass = pass;
+        this.match = match;
+
         this.spans = regionMap.spans;
         this._regionMap = regionMap;
 
@@ -275,9 +284,6 @@ class Similarities {
 
         // An immutable map from spanId to state
         this._spanStates = spanStates;
-
-        // Change _spanStates (triggers a rerender)
-        this._setSpanStates = setSpanStates;
     }
 
     isFirstInHighlightedSpan(region) {

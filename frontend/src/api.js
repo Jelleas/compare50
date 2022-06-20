@@ -17,7 +17,11 @@ class API {
                 id: -2,
                 isArchive: false,
             },
-            []
+            [],
+            {
+                index: -1,
+                numberOfMatches: -1,
+            }
         );
     }
 
