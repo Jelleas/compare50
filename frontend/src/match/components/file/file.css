@@ -14,6 +14,14 @@ pre.softwrap {
     word-wrap: break-word; /* Internet Explorer 5.5+ */
 }
 
+/* https://stackoverflow.com/questions/6900124/how-to-make-certain-text-not-selectable-with-css */
+.unselectable {
+    -webkit-user-select: none; /* Safari */        
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE10+/Edge */
+    user-select: none; /* Standard */
+}
+
 code.newline {
     counter-increment: lineNumbers;
 }

@@ -11,11 +11,20 @@ function useFragments(file, spans, ignoredSpans) {
 }
 
 class Fragment {
-    constructor(file, start, end) {
-        this.fileId = file.id;
+    constructor(
+        fileId,
+        start,
+        end,
+        text,
+        startingLineNumber,
+        endingLineNumber
+    ) {
+        this.fileId = fileId;
         this.start = start;
         this.end = end;
-        this.text = file.content.substring(start, end);
+        this.text = text;
+        this.startingLineNumber = startingLineNumber;
+        this.endingLineNumber = endingLineNumber;
     }
 }
 
@@ -34,9 +43,23 @@ function slice(file, spans) {
     slicingMarks.sort((a, b) => a - b);
 
     let fragments = [];
+    let lineNr = 1;
     for (let i = 0; i < slicingMarks.length - 1; i++) {
+        const start = slicingMarks[i];
+        const end = slicingMarks[i + 1];
+        const text = file.content.substring(start, end);
+        const startingLineNumber = lineNr;
+        lineNr += (text.match(/\n/g) || []).length;
+
         fragments.push(
-            new Fragment(file, slicingMarks[i], slicingMarks[i + 1])
+            new Fragment(
+                file.id,
+                slicingMarks[i],
+                slicingMarks[i + 1],
+                text,
+                startingLineNumber,
+                lineNr
+            )
         );
     }
 

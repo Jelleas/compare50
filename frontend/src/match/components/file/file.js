@@ -34,6 +34,12 @@ function File({
     // Keep track of whether a line of code starts on a newline (necessary for line numbers through css)
     let isOnNewline = true;
 
+    fragments.map((frag) => {
+        // isOnNewline = frag.text.endsWith("\n");
+        const isGrouped = similarities.isGrouped(frag);
+        return;
+    });
+
     const fragmentElems = fragments.map((frag) => {
         const id = `frag_${file.id}_${frag.start}`;
         const fragElem = (
@@ -59,14 +65,17 @@ function File({
                 {" "}
                 {file.name} <span>{percentage}%</span>
             </h4>
-            <pre
-                className={
-                    (settings.isSoftWrapped ? "softwrap" : "") +
-                    " monospace-text"
-                }
-            >
-                {fragmentElems}
-            </pre>
+
+            <div>
+                <pre
+                    className={
+                        (settings.isSoftWrapped ? "softwrap" : "") +
+                        " monospace-text"
+                    }
+                >
+                    {fragmentElems}
+                </pre>
+            </div>
         </>
     );
 }
@@ -104,6 +113,35 @@ function Fragment({
     const hasMouseOvers =
         !isInteractionBlocked && similarities.isGrouped(fragment);
 
+    const codeElements = lines.map((line, lineIndex) => {
+        const isNewLine = isOnNewline || lineIndex > 0;
+
+        // If starting on a newline, make the leading whitespace visible
+        if (isNewLine && !settings.isWhiteSpaceHidden) {
+            line = replaceLeadingWhitespace(line);
+        }
+
+        const codeElem = (
+            <code
+                key={`code_${id}_${lineIndex}`}
+                className={isNewLine ? "newline" : ""}
+            >
+                {line}
+            </code>
+        );
+
+        if (!isNewLine) return codeElem;
+
+        return (
+            <>
+                <code className="unselectable">
+                    {fragment.startingLineNumber + lineIndex}
+                </code>
+                {codeElem}
+            </>
+        );
+    });
+
     return (
         <span
             ref={ref}
@@ -140,23 +178,7 @@ function Fragment({
                     : undefined
             }
         >
-            {lines.map((line, lineIndex) => {
-                const isNewLine = isOnNewline || lineIndex > 0;
-
-                // If starting on a newline, make the leading whitespace visible
-                if (isNewLine && !settings.isWhiteSpaceHidden) {
-                    line = replaceLeadingWhitespace(line);
-                }
-
-                return (
-                    <code
-                        key={`code_${id}_${lineIndex}`}
-                        className={isNewLine ? "newline" : ""}
-                    >
-                        {line}
-                    </code>
-                );
-            })}
+            {codeElements}
         </span>
     );
 }
