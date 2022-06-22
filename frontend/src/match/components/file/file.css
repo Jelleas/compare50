@@ -15,10 +15,6 @@ pre.softwrap {
     user-select: none; /* Standard */
 }
 
-code.newline {
-    counter-increment: lineNumbers;
-}
-
 /* https://material.io/resources/color/ */
 .highlighted-span {
     background-color: #90caf9; /*#aed581;*/

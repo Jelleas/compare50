@@ -92,13 +92,6 @@ function Fragment({
 
     const isHighlighted = similarities.isHighlighted(fragment);
 
-    useEffect(() => {
-        // If this fragment is highlighted, and it's the first in its span, scroll to it
-        if (isHighlighted && similarities.isFirstInHighlightedSpan(fragment)) {
-            scrollTo(ref.current);
-        }
-    });
-
     const className = getClassName(
         fragment,
         similarities,
@@ -108,20 +101,44 @@ function Fragment({
     const hasMouseOvers =
         !isInteractionBlocked && similarities.isGrouped(fragment);
 
+    const getAlertLevel = (similarities, fragment) => {
+        return similarities.isGrouped(fragment) ? 3 : -1;
+    };
+
     const codeSnippets = lines.map((line, lineIndex) => {
-        const lineNr = (fragment.startingLineNumber + lineIndex)
-            .toString()
-            .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+        const optionalProps = {};
+        const isCodeOnNewLine = isOnNewline || lineIndex > 0;
+
+        if (isCodeOnNewLine) {
+            const lineNumber = fragment.startingLineNumber + lineIndex;
+
+            optionalProps["lineNumber"] = lineNumber
+                .toString()
+                .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+        }
+
+        if (
+            isCodeOnNewLine ||
+            (lines.length === 1 && similarities.isFirstInSpan(fragment))
+        ) {
+            optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
+        }
 
         return (
             <CodeSnippet
                 key={`code_${id}_${lineIndex}`}
                 line={line}
-                lineNumber={lineNr}
-                isOnNewLine={isOnNewline || lineIndex > 0}
                 settings={settings}
+                {...optionalProps}
             ></CodeSnippet>
         );
+    });
+
+    useEffect(() => {
+        // If this fragment is highlighted, and it's the first in its span, scroll to it
+        if (isHighlighted && similarities.isFirstInHighlightedSpan(fragment)) {
+            scrollTo(ref.current);
+        }
     });
 
     return (
@@ -165,32 +182,42 @@ function Fragment({
     );
 }
 
-function CodeSnippet({ line, lineNumber, isOnNewLine, settings }) {
+function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
+    if (lineNumber == null && alertLevel == null) {
+        return <code>{line}</code>;
+    }
+
     // If starting on a newline, make the leading whitespace visible
-    if (isOnNewLine && !settings.isWhiteSpaceHidden) {
+    if (!settings.isWhiteSpaceHidden) {
         line = replaceLeadingWhitespace(line);
     }
 
-    if (!isOnNewLine) {
-        return <code>{line}</code>;
+    const style = { textAlign: "right" };
+    if (alertLevel != null) {
+        const alertColors = {
+            "-1": "transparent",
+            0: "green",
+            1: "yellow",
+            2: "orange",
+            3: "red",
+        };
+        style["borderLeft"] = `5px solid ${alertColors[alertLevel]}`;
     }
 
     return (
         <>
-            <code
-                className="unselectable"
-                style={{
-                    textAlign: "right",
-                    borderLeft: "5px solid red",
-                    marginTop: "0px",
-                }}
-            >
-                {" " + lineNumber + " "}
+            <code className="unselectable" style={style}>
+                {lineNumber == null ? "" : ` ${lineNumber} `}
             </code>
-            <code className="newline">{line}</code>
+            <code>{line}</code>
         </>
     );
 }
+
+CodeSnippet.defaultProps = {
+    lineNumber: null,
+    alertLevel: null,
+};
 
 function replaceLeadingWhitespace(line) {
     let newLine = "";

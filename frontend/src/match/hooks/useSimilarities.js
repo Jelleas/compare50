@@ -286,6 +286,12 @@ class Similarities {
         this._spanStates = spanStates;
     }
 
+    isFirstInSpan(region) {
+        const spans = this._regionMap.getSpans(region);
+        const span = spans.find((span) => span.start === region.start);
+        return span !== undefined;
+    }
+
     isFirstInHighlightedSpan(region) {
         const spans = this._regionMap.getSpans(region);
         const span = spans.find(
