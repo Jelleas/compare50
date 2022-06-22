@@ -115,6 +115,7 @@ function Fragment({
 
         return (
             <CodeSnippet
+                key={`code_${id}_${lineIndex}`}
                 line={line}
                 lineNumber={lineNr}
                 isOnNewLine={isOnNewline || lineIndex > 0}
