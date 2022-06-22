@@ -191,6 +191,7 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
     }
 
     const style = { textAlign: "right" };
+    const optionalProps = {};
     if (alertLevel != null) {
         const alertColors = {
             "-1": "transparent",
@@ -199,12 +200,18 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
             2: "orange",
             3: "red",
         };
-        style["borderLeft"] = `5px solid ${alertColors[alertLevel]}`;
+        style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
+
+        if (alertLevel >= 0) {
+            optionalProps["data-tip"] = "Placeholder info on similarity";
+            optionalProps["data-for"] = "splitview-tooltip";
+            optionalProps["data-place"] = "left";
+        }
     }
 
     return (
         <>
-            <code className="unselectable" style={style}>
+            <code className="unselectable" style={style} {...optionalProps}>
                 {lineNumber == null ? "" : ` ${lineNumber} `}
             </code>
             <code>{line}</code>
