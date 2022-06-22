@@ -287,9 +287,7 @@ class Similarities {
     }
 
     isFirstInSpan(region) {
-        const spans = this._regionMap.getSpans(region);
-        const span = spans.find((span) => span.start === region.start);
-        return span !== undefined;
+        return this.getSpan(region)?.start === region.start;
     }
 
     isFirstInHighlightedSpan(region) {

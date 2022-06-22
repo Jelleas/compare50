@@ -13,11 +13,7 @@ function File({
     settings,
     isInteractionBlocked,
 }) {
-    const fragments = useFragments(
-        file,
-        similarities.spans,
-        similarities.ignoredSpans
-    );
+    const fragments = useFragments(file, similarities);
 
     const coverage = useCoverage(fragments, similarities);
 
@@ -34,7 +30,7 @@ function File({
     // Keep track of whether a line of code starts on a newline (necessary for line numbers through css)
     let isOnNewline = true;
 
-    const fragmentElems = fragments.map((frag) => {
+    const fragmentElems = fragments.map((frag, i) => {
         const id = `frag_${file.id}_${frag.start}`;
 
         const fragElem = (
@@ -43,6 +39,12 @@ function File({
                 fragment={frag}
                 id={id}
                 isOnNewline={isOnNewline}
+                isAlertForced={isInSingleLineSpan(
+                    frag,
+                    fragments,
+                    i,
+                    similarities
+                )}
                 settings={settings}
                 scrollTo={scrollTo}
                 similarities={similarities}
@@ -82,12 +84,10 @@ function Fragment({
     isInteractionBlocked,
     settings,
     isOnNewline,
+    isAlertForced,
     id,
     scrollTo,
 }) {
-    // Break up the fragments into lines (keep the newline)
-    const lines = fragment.text.split(/(?<=\n)/g);
-
     const ref = useRef(null);
 
     const isHighlighted = similarities.isHighlighted(fragment);
@@ -105,6 +105,9 @@ function Fragment({
         return similarities.isGrouped(fragment) ? 3 : -1;
     };
 
+    // Break up the fragments into lines (keep the newline)
+    const lines = fragment.text.split(/(?<=\n)/g);
+
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};
 
@@ -117,8 +120,9 @@ function Fragment({
                 .padStart(fragment.numberOfLinesInFile.toString().length, " ");
             optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
         }
-        // If the code is on one line, and it's the first in a matched span, show alert
-        else if (lines.length === 1 && similarities.isFirstInSpan(fragment)) {
+        // If this fragment is on one line, and it's the first in a matched span
+        else if (isAlertForced) {
+            // And the span itself is also on just one line, show alert
             optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
         }
 
@@ -223,6 +227,41 @@ CodeSnippet.defaultProps = {
     lineNumber: null,
     alertLevel: null,
 };
+
+function isInSingleLineSpan(fragment, fragments, fragmentIndex, similarities) {
+    // If it's a multiline fragment, or not grouped, or not in the front of a group -> false
+    if (
+        fragment.startingLineNumber !== fragment.endingLineNumber ||
+        !similarities.isGrouped(fragment) ||
+        !similarities.isFirstInSpan(fragment)
+    ) {
+        return false;
+    }
+
+    const span = similarities.getSpan(fragment);
+
+    // Check the next fragments
+    for (let j = fragmentIndex + 1; j < fragments.length; j++) {
+        // If frag is not in the same span -> true
+        const otherFrag = fragments[j];
+        const otherSpan = similarities.getSpan(otherFrag);
+        if (span !== otherSpan) {
+            return true;
+        }
+
+        // If a frag is in the same span and on a next line -> false
+        const otherLineNumber = Math.max(
+            otherFrag.startingLineNumber,
+            otherFrag.endingLineNumber
+        );
+        if (fragment.startingLineNumber !== otherLineNumber) {
+            return false;
+        }
+    }
+
+    // If there is no other frags before EOF, then it must be single line -> true
+    return true;
+}
 
 function replaceLeadingWhitespace(line) {
     let newLine = "";
