@@ -108,39 +108,18 @@ function Fragment({
     const hasMouseOvers =
         !isInteractionBlocked && similarities.isGrouped(fragment);
 
-    const codeElements = lines.map((line, lineIndex) => {
-        const isNewLine = isOnNewline || lineIndex > 0;
-
-        // If starting on a newline, make the leading whitespace visible
-        if (isNewLine && !settings.isWhiteSpaceHidden) {
-            line = replaceLeadingWhitespace(line);
-        }
-
-        const codeElem = (
-            <code
-                key={`code_${id}_${lineIndex}`}
-                className={isNewLine ? "newline" : ""}
-            >
-                {line}
-            </code>
-        );
-
-        if (!isNewLine) return codeElem;
-
+    const codeSnippets = lines.map((line, lineIndex) => {
         const lineNr = (fragment.startingLineNumber + lineIndex)
             .toString()
             .padStart(fragment.numberOfLinesInFile.toString().length, " ");
 
         return (
-            <>
-                <code
-                    className="unselectable"
-                    style={{ "text-align": "right" }}
-                >
-                    {lineNr + " "}
-                </code>
-                {codeElem}
-            </>
+            <CodeSnippet
+                line={line}
+                lineNumber={lineNr}
+                isOnNewLine={isOnNewline || lineIndex > 0}
+                settings={settings}
+            ></CodeSnippet>
         );
     });
 
@@ -180,8 +159,35 @@ function Fragment({
                     : undefined
             }
         >
-            {codeElements}
+            {codeSnippets}
         </span>
+    );
+}
+
+function CodeSnippet({ line, lineNumber, isOnNewLine, settings }) {
+    // If starting on a newline, make the leading whitespace visible
+    if (isOnNewLine && !settings.isWhiteSpaceHidden) {
+        line = replaceLeadingWhitespace(line);
+    }
+
+    if (!isOnNewLine) {
+        return <code>{line}</code>;
+    }
+
+    return (
+        <>
+            <code
+                className="unselectable"
+                style={{
+                    textAlign: "right",
+                    borderLeft: "5px solid red",
+                    marginTop: "0px",
+                }}
+            >
+                {" " + lineNumber + " "}
+            </code>
+            <code className="newline">{line}</code>
+        </>
     );
 }
 
