@@ -107,20 +107,18 @@ function Fragment({
 
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};
-        const isCodeOnNewLine = isOnNewline || lineIndex > 0;
 
-        if (isCodeOnNewLine) {
+        // If the code is on a newline, show line number and alert
+        if (isOnNewline || lineIndex > 0) {
             const lineNumber = fragment.startingLineNumber + lineIndex;
 
             optionalProps["lineNumber"] = lineNumber
                 .toString()
                 .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+            optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
         }
-
-        if (
-            isCodeOnNewLine ||
-            (lines.length === 1 && similarities.isFirstInSpan(fragment))
-        ) {
+        // If the code is on one line, and it's the first in a matched span, show alert
+        else if (lines.length === 1 && similarities.isFirstInSpan(fragment)) {
             optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
         }
 
