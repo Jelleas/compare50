@@ -34,14 +34,9 @@ function File({
     // Keep track of whether a line of code starts on a newline (necessary for line numbers through css)
     let isOnNewline = true;
 
-    fragments.map((frag) => {
-        // isOnNewline = frag.text.endsWith("\n");
-        const isGrouped = similarities.isGrouped(frag);
-        return;
-    });
-
     const fragmentElems = fragments.map((frag) => {
         const id = `frag_${file.id}_${frag.start}`;
+
         const fragElem = (
             <Fragment
                 key={id}
@@ -132,10 +127,17 @@ function Fragment({
 
         if (!isNewLine) return codeElem;
 
+        const lineNr = (fragment.startingLineNumber + lineIndex)
+            .toString()
+            .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+
         return (
             <>
-                <code className="unselectable">
-                    {fragment.startingLineNumber + lineIndex}
+                <code
+                    className="unselectable"
+                    style={{ "text-align": "right" }}
+                >
+                    {lineNr + " "}
                 </code>
                 {codeElem}
             </>

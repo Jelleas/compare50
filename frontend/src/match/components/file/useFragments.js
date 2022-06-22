@@ -13,6 +13,7 @@ function useFragments(file, spans, ignoredSpans) {
 class Fragment {
     constructor(
         fileId,
+        numberOfLinesInFile,
         start,
         end,
         text,
@@ -20,6 +21,7 @@ class Fragment {
         endingLineNumber
     ) {
         this.fileId = fileId;
+        this.numberOfLinesInFile = numberOfLinesInFile;
         this.start = start;
         this.end = end;
         this.text = text;
@@ -42,6 +44,8 @@ function slice(file, spans) {
 
     slicingMarks.sort((a, b) => a - b);
 
+    const numberOfLinesInFile = (file.content.match(/\n/g) || []).length;
+
     let fragments = [];
     let lineNr = 1;
     for (let i = 0; i < slicingMarks.length - 1; i++) {
@@ -54,6 +58,7 @@ function slice(file, spans) {
         fragments.push(
             new Fragment(
                 file.id,
+                numberOfLinesInFile,
                 slicingMarks[i],
                 slicingMarks[i + 1],
                 text,
