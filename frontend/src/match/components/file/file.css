@@ -15,6 +15,12 @@ pre.softwrap {
     user-select: none; /* Standard */
 }
 
+/* A little extra padding to ensure the alerts in the edge have no gaps between them */
+code.unselectable {
+    padding-top: 2.8px;
+    padding-bottom: .7px;
+}
+
 /* https://material.io/resources/color/ */
 .highlighted-span {
     background-color: #90caf9; /*#aed581;*/

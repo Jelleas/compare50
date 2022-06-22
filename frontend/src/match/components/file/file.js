@@ -194,7 +194,7 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
         line = replaceLeadingWhitespace(line);
     }
 
-    const style = { textAlign: "right" };
+    const style = { textAlign: "right", color: "black" };
     const optionalProps = {};
     if (alertLevel != null) {
         const alertColors = {
