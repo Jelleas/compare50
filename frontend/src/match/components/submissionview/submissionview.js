@@ -96,6 +96,7 @@ function useMax() {
             // Find the item with the highest value
             let newMaxItem = item;
             let newMaxValue = 0;
+
             Object.entries(values.current).forEach(([item, value]) => {
                 if (value > newMaxValue) {
                     newMaxItem = item;
@@ -103,12 +104,9 @@ function useMax() {
                 }
             });
 
-            // If the item with the highest value is different from the last, update maxItem
-            if (newMaxItem !== maxItem) {
-                setMaxItem(newMaxItem);
-            }
+            setMaxItem(newMaxItem);
         },
-        [maxItem]
+        [setMaxItem]
     );
 
     return [maxItem, update];

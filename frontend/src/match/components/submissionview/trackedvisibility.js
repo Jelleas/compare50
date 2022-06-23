@@ -5,10 +5,9 @@ function TrackedVisibility({ id, updateVisibility, children }) {
         threshold: Array.from(Array(100).keys(), (i) => i / 100),
     });
 
-    const _updateFileVisibility = updateVisibility;
     useEffect(() => {
-        _updateFileVisibility(id, entry.intersectionRatio);
-    }, [id, _updateFileVisibility, entry.intersectionRatio]);
+        updateVisibility(id, entry.intersectionRatio);
+    }, [id, updateVisibility, entry.intersectionRatio]);
 
     return <span ref={visibilityRef}>{children}</span>;
 }
