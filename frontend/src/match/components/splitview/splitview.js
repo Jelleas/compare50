@@ -4,6 +4,7 @@ import ReactTooltip from "react-tooltip";
 
 import SubmissionView from "../submissionview";
 
+import "./tooltip.css";
 import "../../matchview.css";
 
 function SplitView({ settings, similarities, dispatchSimilarities }) {
@@ -23,6 +24,8 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                 type="info"
                 effect="solid"
                 id="splitview-tooltip"
+                clickable="true"
+                delayHide={300}
             />
             <Split
                 sizes={[50, 50]}

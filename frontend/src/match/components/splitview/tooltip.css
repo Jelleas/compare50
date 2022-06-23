@@ -1,0 +1,15 @@
+/* https://github.com/wwayne/react-tooltip/issues/313 */
+#splitview-tooltip {
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-out !important;
+    opacity: 0 !important;
+    visibility: visible;
+}
+
+#splitview-tooltip.show {
+    visibility: visible;
+    opacity: 1 !important;
+}
+
+#splitview-tooltip:not(.show) {
+    visibility: hidden;
+}
