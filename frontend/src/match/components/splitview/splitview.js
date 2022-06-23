@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Split from "react-split";
 import ReactTooltip from "react-tooltip";
 
@@ -9,6 +9,12 @@ import "../../matchview.css";
 function SplitView({ settings, similarities, dispatchSimilarities }) {
     const [isInteractionBlocked, setIsInteractionBlocked] = useState(false);
     const match = similarities.match;
+
+    // https://www.npmjs.com/package/react-tooltip
+    // Use ReactTooltip.rebuild() to rebind the tooltip to new content
+    useEffect(() => {
+        if (similarities.pass !== undefined) ReactTooltip.rebuild();
+    }, [similarities.pass]);
 
     return (
         <>
