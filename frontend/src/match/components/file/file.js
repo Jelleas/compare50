@@ -106,7 +106,11 @@ function Fragment({
     };
 
     // Break up the fragments into lines (keep the newline)
-    const lines = fragment.text.split(/(?<=\n)/g);
+    // const lines = fragment.text.split(/(?<=\n)/g);
+    let lines = fragment.text.split("\n");
+    lines = lines.map((line, i) =>
+        i !== lines.length - 1 ? line + "\n" : line
+    );
 
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};

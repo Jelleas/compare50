@@ -7,6 +7,34 @@ import SubmissionView from "../submissionview";
 import "./tooltip.css";
 import "../../matchview.css";
 
+/*
+Monkey patch of React Tooltip. 
+In production mouseOnToolTip returned false even with :hover set on the element.
+Matching with element:hover instead of just :hover fixes the issue.
+Also see: https://stackoverflow.com/questions/14795099/pure-javascript-to-check-if-something-has-hover-without-setting-on-mouseover-ou
+*/
+function mouseOnToolTip() {
+    const { show } = this.state;
+
+    if (show && this.tooltipRef) {
+        /* old IE or Firefox work around */
+        if (!this.tooltipRef.matches) {
+            /* old IE work around */
+            if (this.tooltipRef.msMatchesSelector) {
+                this.tooltipRef.matches = this.tooltipRef.msMatchesSelector;
+            } else {
+                /* old Firefox work around */
+                this.tooltipRef.matches = this.tooltipRef.mozMatchesSelector;
+            }
+        }
+        return this.tooltipRef.matches(
+            `${this.tooltipRef.tagName.toLowerCase()}:hover`
+        );
+    }
+    return false;
+}
+ReactTooltip.prototype.mouseOnToolTip = mouseOnToolTip;
+
 function SplitView({ settings, similarities, dispatchSimilarities }) {
     const [isInteractionBlocked, setIsInteractionBlocked] = useState(false);
     const match = similarities.match;
@@ -24,7 +52,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                 type="info"
                 effect="solid"
                 id="splitview-tooltip"
-                clickable="true"
+                clickable={true}
                 delayHide={300}
             />
             <Split
