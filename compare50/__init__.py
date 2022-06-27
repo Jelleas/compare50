@@ -21,6 +21,6 @@ def _set_version():
 # Encapsulated inside a function so their local variables/imports aren't seen by autocompleters
 _set_version()
 
-from ._api import *
 from ._data import *
-from . import comparators, preprocessors, passes
+from ._api import *
+from . import comparators, preprocessors, passes, explainers

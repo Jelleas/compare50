@@ -1,6 +1,5 @@
 import abc
 from collections.abc import Mapping, Sequence
-import os
 import pathlib
 import numbers
 
@@ -9,8 +8,8 @@ import pygments
 import pygments.lexers
 
 
-__all__ = ["Pass", "Comparator", "File", "Submission",
-           "Pass", "Span", "Score", "Comparison", "Token"]
+__all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "Submission",
+           "Span", "Score", "Compare50Result", "Comparison", "Token"]
 
 
 class _PassRegistry(abc.ABCMeta):
@@ -54,6 +53,8 @@ class Pass(metaclass=_PassRegistry):
     def comparator(self):
         pass
 
+    explainers = []
+
 
 class Comparator(metaclass=abc.ABCMeta):
     """
@@ -75,6 +76,24 @@ class Comparator(metaclass=abc.ABCMeta):
         comparison of each submission pair and return a corresponding list of
         :class:`compare50.Comparison`\ s
         """
+        pass
+
+
+class Explainer(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
+    def name(self):
+        pass
+
+    @abc.abstractmethod
+    def explain(
+        self, 
+        results: list["Compare50Result"], 
+        submissions: list["Submission"], 
+        archive_submissions: list["Submission"], 
+        ignored_files: set["File"], 
+        pass_: Pass
+    ) -> list["Explanation"]:
         pass
 
 
@@ -178,7 +197,7 @@ class File:
             return f.read(size)
 
     def tokens(self):
-        """Returns the preprpocessed tokens of the file."""
+        """Returns the prepocessed tokens of the file."""
         return list(self.submission.preprocessor(self.unprocessed_tokens()))
 
     def lexer(self):
@@ -202,7 +221,7 @@ class File:
 
     @classmethod
     def get(cls, id):
-        """Find File with given id"""
+        """Find File with given id."""
         return cls._store.objects[id]
 
     def unprocessed_tokens(self):
@@ -297,7 +316,7 @@ class Score:
 class Compare50Result:
     """
     :ivar pass_: the pass that was used to compare the two submissions
-    :ivar score: the :class:`compare50.Score` generated when the subimssions were scored
+    :ivar score: the :class:`compare50.Score` generated when the submissions were scored
     :ivar groups: a list of groups of matching spans
     :ivar ignored_spans: a list of spans that were ignored during the comparison
 
@@ -333,6 +352,11 @@ def _sorted_subs(group):
             return (sub, span.file.submission)
         elif sub > span.file.submission:
             return (span.file.submission, sub)
+
+
+@attr.s(slots=True)
+class Explanation:
+    pass
 
 
 @attr.s(slots=True, frozen=True)

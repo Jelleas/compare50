@@ -1,18 +1,16 @@
+from __future__ import annotations
+
 import collections
-import contextlib
 import heapq
-import io
-import itertools
-import time
 
 import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, Span, Group, BisectList, Compare50Result
+from ._data import Submission, Explainer, Explanation, Pass, Span, Score, File, Group, BisectList, Compare50Result
 
 
-__all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
+__all__ = ["rank", "compare", "explain", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
 
 
 class Error(Exception):
@@ -20,7 +18,7 @@ class Error(Exception):
     pass
 
 
-def rank(submissions, archive_submissions, ignored_files, pass_, n=50):
+def rank(submissions: list[Submission], archive_submissions: list[Submission], ignored_files: set[File], pass_: Pass, n: int=50) -> list[Score]:
     """
     :param submissions: submissions to be ranked
     :type submissions: [:class:`compare50.Submission`]
@@ -39,20 +37,12 @@ def rank(submissions, archive_submissions, ignored_files, pass_, n=50):
     Rank submissions, return the top ``n`` most similar pairs
     """
     scores = pass_.comparator.score(submissions, archive_submissions, ignored_files)
+ 
     # Keep only top `n` submission matches
     return heapq.nlargest(n, scores)
+ 
 
-    # max_id = max((max(score.sub_a.id, score.sub_b.id) for score in scores))
-    # matrix = np.zeros((max_id+1, max_id+1))
-    # for score in scores:
-        # matrix[score.sub_b.id][score.sub_a.id] = matrix[score.sub_a.id][score.sub_b.id] = 1 / (score.score + 1)
-    # labels = cluster.SpectralClustering(affinity="precomputed").fit_predict(matrix)
-
-    # for submission in itertools.chain(submissions, archive_submissions):
-        # object.__setattr__(submission, "cluster", int(labels[submission.id]))
-
-
-def compare(scores, ignored_files, pass_):
+def compare(scores: list[Score], ignored_files: set[File], pass_: Pass) -> list[Compare50Result]:
     """
     :param scores: Scored submission pairs to be compared more granularly
     :type scores: [:class:`compare50.Score`]
@@ -102,6 +92,18 @@ def compare(scores, ignored_files, pass_):
 
     return results
 
+
+def explain(
+    results: list[Compare50Result],
+    submissions: list[Submission],
+    archive_submissions: list[Submission], 
+    ignored_files: set[File], 
+    explainer: Explainer,
+    pass_: Pass
+) -> list[Explanation]:
+
+    explanations = explainer.explain(results, submissions, archive_submissions, ignored_files, pass_)
+    return explanations
 
 def missing_spans(file, original_tokens=None, processed_tokens=None):
     """

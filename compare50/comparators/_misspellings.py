@@ -1,11 +1,8 @@
 import collections
 import contextlib
 import itertools
-import pathlib
-import re
 
 import attr
-from pygments.token import Comment
 
 from .. import Comparator, Span, Comparison, Score
 

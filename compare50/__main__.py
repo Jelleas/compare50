@@ -8,12 +8,9 @@ import tempfile
 import textwrap
 import shutil
 import sys
-import string
 import traceback
-import time
 import tempfile
 
-import attr
 import lib50
 import termcolor
 
@@ -425,7 +422,6 @@ def main():
             scores = _api.rank(subs, archive_subs, ignored_files, passes[0], n=args.n)
 
         # Get the matching spans, group them per submission
-        groups = []
         pass_to_results = {}
         for pass_ in passes:
             with _api.progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
@@ -433,6 +429,21 @@ def main():
                 for sub in itertools.chain(subs, archive_subs, ignored_subs):
                     object.__setattr__(sub, "preprocessor", preprocessor)
                 pass_to_results[pass_] = _api.compare(scores, ignored_files, pass_)
+
+
+        # Explain results
+        for pass_ in passes:
+            formatted_names = ", ".join([exp.name for exp in pass_.explainers])
+            with _api.progress_bar(f"Explaining ({formatted_names}) for ({pass_.__name__})", disable=args.debug):
+                for explainer in pass_.explainers:
+                    _api.explain(
+                        results=pass_to_results[pass_],
+                        submissions=subs,
+                        archive_submissions=archive_subs,
+                        ignored_files=ignored_files,
+                        explainer=explainer,
+                        pass_=pass_
+                    )
 
         # Render results
         with _api.progress_bar("Rendering", disable=args.debug):

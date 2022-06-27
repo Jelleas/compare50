@@ -1,6 +1,6 @@
 from pkg_resources import resource_filename
 
-from . import comparators, preprocessors
+from . import comparators, preprocessors, explainers
 from ._data import Pass
 
 __all__ = ["structure", "text", "exact", "nocomments", "misspellings"]
@@ -16,6 +16,7 @@ class structure(Pass):
                      preprocessors.normalize_string_literals,
                      preprocessors.normalize_numeric_literals]
     comparator = comparators.Winnowing(k=25, t=35)
+    explainers = [explainers.Uniqueness()]
 
 
 class text(Pass):
