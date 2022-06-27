@@ -209,6 +209,9 @@ class Index(abc.ABC):
     def __bool__(self):
         return bool(self._index)
 
+    def __getitem__(self, fingerprint):
+        return self._index[fingerprint]
+
 
 class ScoreIndex(Index):
     def __init__(self, k, t):
