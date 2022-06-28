@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import List, Dict, Set
+import math
 
 from tokenize import Token
 from .. import Explainer, Explanation, Compare50Result, Span, Submission, File, Pass, Token
 from ..comparators._winnowing import CompareIndex # TODO fix import
 
-from collections import defaultdict
 
 class Uniqueness(Explainer):
     name = "uniqueness"
@@ -41,8 +42,22 @@ class Uniqueness(Explainer):
 
         span_to_fingerprints = get_span_to_fingerprints(results, index, file_to_tokens)
 
+        n_submissions = len(submissions)
+
+        for matched_span, fingerprints in span_to_fingerprints.items():
+            print(matched_span._raw_contents())
+            print(matched_span)
+            for fingerprint, span in fingerprints:
+                print(fingerprint, span, len(index[fingerprint]), compute_inverse_document_frequency(fingerprint, index, n_submissions))
+            break
+
         return []
     
+
+def compute_inverse_document_frequency(fingerprint: int, index: CompareIndex, n: int) -> float:
+    n_documents = len({span.file.submission.id for span in index[fingerprint]})
+    score = 1 + math.log(n / (1 + n_documents))
+    return score
 
 def get_span_to_fingerprints(
     results: List[Compare50Result],

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import contextlib
 import glob
@@ -10,6 +12,8 @@ import shutil
 import sys
 import traceback
 import tempfile
+
+from typing import List
 
 import lib50
 import termcolor
@@ -424,16 +428,17 @@ def main():
         # Get the matching spans, group them per submission
         pass_to_results = {}
         for pass_ in passes:
+            set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
+            
             with _api.progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
-                preprocessor = _data.Preprocessor(pass_.preprocessors)
-                for sub in itertools.chain(subs, archive_subs, ignored_subs):
-                    object.__setattr__(sub, "preprocessor", preprocessor)
                 pass_to_results[pass_] = _api.compare(scores, ignored_files, pass_)
 
 
         # Explain results
         for pass_ in passes:
             formatted_names = ", ".join([exp.name for exp in pass_.explainers])
+            set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
+            
             with _api.progress_bar(f"Explaining ({formatted_names}) for ({pass_.__name__})", disable=args.debug):
                 for explainer in pass_.explainers:
                     _api.explain(
@@ -452,6 +457,10 @@ def main():
     termcolor.cprint(
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")
 
+def set_preprocessor(pass_: _data.Pass, submissions: List[_data.Submission]) -> None:
+    preprocessor = _data.Preprocessor(pass_.preprocessors)
+    for sub in submissions:
+        object.__setattr__(sub, "preprocessor", preprocessor)    
 
 if __name__ == "__main__":
     main()
