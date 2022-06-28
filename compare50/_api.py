@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List, Set
+
 import collections
 import heapq
 
@@ -18,7 +20,13 @@ class Error(Exception):
     pass
 
 
-def rank(submissions: list[Submission], archive_submissions: list[Submission], ignored_files: set[File], pass_: Pass, n: int=50) -> list[Score]:
+def rank(
+    submissions: List[Submission], 
+    archive_submissions: List[Submission], 
+    ignored_files: Set[File], 
+    pass_: Pass, 
+    n: int=50
+) -> list[Score]:
     """
     :param submissions: submissions to be ranked
     :type submissions: [:class:`compare50.Submission`]
@@ -42,7 +50,11 @@ def rank(submissions: list[Submission], archive_submissions: list[Submission], i
     return heapq.nlargest(n, scores)
  
 
-def compare(scores: list[Score], ignored_files: set[File], pass_: Pass) -> list[Compare50Result]:
+def compare(
+    scores: List[Score], 
+    ignored_files: Set[File], 
+    pass_: Pass
+) -> List[Compare50Result]:
     """
     :param scores: Scored submission pairs to be compared more granularly
     :type scores: [:class:`compare50.Score`]
@@ -94,13 +106,13 @@ def compare(scores: list[Score], ignored_files: set[File], pass_: Pass) -> list[
 
 
 def explain(
-    results: list[Compare50Result],
-    submissions: list[Submission],
-    archive_submissions: list[Submission], 
-    ignored_files: set[File], 
+    results: List[Compare50Result],
+    submissions: List[Submission],
+    archive_submissions: List[Submission], 
+    ignored_files: Set[File], 
     explainer: Explainer,
     pass_: Pass
-) -> list[Explanation]:
+) -> List[Explanation]:
 
     explanations = explainer.explain(results, submissions, archive_submissions, ignored_files, pass_)
     return explanations

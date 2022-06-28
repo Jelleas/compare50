@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import List, Dict, Set
+
 from tokenize import Token
 from .. import Explainer, Explanation, Compare50Result, Span, Submission, File, Pass, Token
 from ..comparators._winnowing import CompareIndex # TODO fix import
@@ -14,12 +16,12 @@ class Uniqueness(Explainer):
 
     def explain(
         self, 
-        results: list[Compare50Result], 
-        submissions: list[Submission], 
-        archive_submissions: list[Submission], 
-        ignored_files: set[File], 
+        results: List[Compare50Result], 
+        submissions: List[Submission], 
+        archive_submissions: List[Submission], 
+        ignored_files: Set[File], 
         pass_: Pass
-    ) -> list[Explanation]:
+    ) -> List[Explanation]:
         
         file_to_tokens = get_file_to_tokens(submissions, archive_submissions, ignored_files)
 
@@ -37,47 +39,52 @@ class Uniqueness(Explainer):
         # Ignore (remove) all ignored fingerprints
         index.ignore_all(ignored_index)
 
-        span_to_tokens = get_span_to_tokens(results, file_to_tokens)
+        span_to_fingerprints = get_span_to_fingerprints(results, index, file_to_tokens)
 
         return []
     
 
-def get_span_to_tokens(
-    results: list[Compare50Result],
-    file_to_tokens: dict[File, Token]
-) -> dict[Span, Token]:
+def get_span_to_fingerprints(
+    results: List[Compare50Result],
+    index: CompareIndex,
+    file_to_tokens: Dict[File, Token]
+) -> Dict[Span, list[int, Span]]:
 
-    span_to_tokens = defaultdict(list)
+    span_to_fingerprints = defaultdict(list)
 
-    all_spans = {span for result in results for group in result.groups for span in group.spans}
-    
-    file_to_spans = defaultdict(list)
-    for span in all_spans:
-        file_to_spans[span.file].append(span)
+    # Get all spans that the comparator found matches for
+    all_matched_spans = {span for result in results for group in result.groups for span in group.spans}
 
-    for f in file_to_spans:
-        tokens = file_to_tokens[f]
-        spans = file_to_spans[f]
+    # Create a map from files to their matched_spans
+    file_to_matched_spans = defaultdict(list)
+    for span in all_matched_spans:
+        file_to_matched_spans[span.file].append(span)
 
-        for token in tokens:
-            token_span = Span(f, token.start, token.end)
+    # For each file
+    for f in file_to_matched_spans:
+        # Get its fingerprints and matched spans
+        fingerprints = index.fingerprint(f, tokens=file_to_tokens[f])
+        matched_spans = file_to_matched_spans[f]
 
-            for span in spans:
-                if token_span in span:
-                    span_to_tokens[span].append(token)
+        # Map a matched_span to a fingerprint
+        # Iff the span of the fingerprint is a subregion of the matched_span
+        for fingerprint, span in fingerprints:
+            for matched_span in matched_spans:
+                if span in matched_span:
+                    span_to_fingerprints[matched_span].append([fingerprint, span])
                     break
 
-    return span_to_tokens
+    return span_to_fingerprints
 
 
 def get_file_to_tokens(
-    submissions: list[Submission], 
-    archive_submissions: list[Submission], 
-    ignored_files: set[File]
-) -> dict[File, Token]:
+    submissions: List[Submission], 
+    archive_submissions: List[Submission], 
+    ignored_files: Set[File]
+) -> Dict[File, Token]:
     all_files = get_files_from_submissions(submissions + archive_submissions) + list(ignored_files)
     return {f: f.tokens() for f in all_files}
 
 
-def get_files_from_submissions(submissions: list[Submission]) -> list[File]:
+def get_files_from_submissions(submissions: List[Submission]) -> List[File]:
     return [f for sub in submissions for f in sub.files]

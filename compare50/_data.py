@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import List, Set
+
 import abc
 from collections.abc import Mapping, Sequence
 import pathlib
@@ -88,10 +92,10 @@ class Explainer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def explain(
         self, 
-        results: list["Compare50Result"], 
-        submissions: list["Submission"], 
-        archive_submissions: list["Submission"], 
-        ignored_files: set["File"], 
+        results: List["Compare50Result"], 
+        submissions: List["Submission"], 
+        archive_submissions: List["Submission"], 
+        ignored_files: Set["File"], 
         pass_: Pass
     ) -> list["Explanation"]:
         pass
