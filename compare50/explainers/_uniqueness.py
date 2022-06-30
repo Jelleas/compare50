@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from tkinter.ttk import Progressbar
 from typing import List, Dict, Set
 import math
 
 from tokenize import Token
 from .. import Explainer, Explanation, Compare50Result, Span, Submission, File, Pass, Token
 from ..comparators._winnowing import CompareIndex # TODO fix import
-
+from .. import get_progress_bar
 
 class Uniqueness(Explainer):
     name = "uniqueness"
@@ -23,6 +24,8 @@ class Uniqueness(Explainer):
         ignored_files: Set[File], 
         pass_: Pass
     ) -> List[Explanation]:
+        progress_bar = get_progress_bar()
+        progress_bar.reset(total=100)        
         
         file_to_tokens = get_file_to_tokens(submissions, archive_submissions, ignored_files)
 
@@ -32,38 +35,62 @@ class Uniqueness(Explainer):
             for f in sub.files:
                 index.include(f, tokens=file_to_tokens[f])
 
+        progress_bar.update(40)
+
         # Create an index for all ignored files
         ignored_index = CompareIndex(self.k)
         for f in ignored_files:
             ignored_index.include(f, tokens=file_to_tokens[f])
         
+        progress_bar.update(10)
+
         # Ignore (remove) all ignored fingerprints
         index.ignore_all(ignored_index)
 
-        span_to_fingerprints = get_span_to_fingerprints(results, index, file_to_tokens)
+        # Find all fingerprints belonging to a span
+        span_to_fingerprints: Dict[Span, List[int, Span]] = get_span_to_fingerprints(results, index, file_to_tokens)
+
+        progress_bar.update(25)
+
+        explanations: List[Explanation] = []
 
         n_submissions = len(submissions)
 
-        for matched_span, fingerprints in span_to_fingerprints.items():
-            print(matched_span._raw_contents())
-            print(matched_span)
-            for fingerprint, span in fingerprints:
-                print(fingerprint, span, len(index[fingerprint]), compute_inverse_document_frequency(fingerprint, index, n_submissions))
-            break
+        # The highest score is only 2 submissions having the same fingerprint 
+        max_idf_score = compute_idf(2, n_submissions)
 
-        return []
+        # For each matched span
+        for matched_span, fingerprints in span_to_fingerprints.items():
+            # print(matched_span._raw_contents())
+            # print(matched_span)
+
+            # Create an explanation for each fingerprint within the matched span
+            for fingerprint, span in fingerprints:
+                n_submissions_with_fingerprint = len({span.file.submission.id for span in index[fingerprint]})
+
+                # print(fingerprint, span, len(index[fingerprint]), compute_idf(n_submissions_with_fingerprint, n_submissions))
+
+                idf_score = compute_idf(n_submissions_with_fingerprint, n_submissions)
+                percentage = n_submissions_with_fingerprint / n_submissions * 100
+                explanations.append(Explanation(
+                    span=span,
+                    text=f"{percentage}% of submissions for this assignment contain this fingerprint.",
+                    weight=idf_score / max_idf_score
+                ))
+        
+        progress_bar.update(25)
+
+        return explanations
     
 
-def compute_inverse_document_frequency(fingerprint: int, index: CompareIndex, n: int) -> float:
-    n_documents = len({span.file.submission.id for span in index[fingerprint]})
-    score = 1 + math.log(n / (1 + n_documents))
-    return score
+def compute_idf(n_documents, total_n_documents: int) -> float:
+    return 1 + math.log(n_documents / (1 + total_n_documents))
 
 def get_span_to_fingerprints(
     results: List[Compare50Result],
     index: CompareIndex,
     file_to_tokens: Dict[File, Token]
-) -> Dict[Span, list[int, Span]]:
+) -> Dict[Span, List[int, Span]]:
 
     span_to_fingerprints = defaultdict(list)
 

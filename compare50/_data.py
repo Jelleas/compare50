@@ -6,6 +6,7 @@ import abc
 from collections.abc import Mapping, Sequence
 import pathlib
 import numbers
+from wsgiref.validate import validator
 
 import attr
 import pygments
@@ -360,7 +361,14 @@ def _sorted_subs(group):
 
 @attr.s(slots=True)
 class Explanation:
-    pass
+    """
+    :ivar span: the explained span
+    :ivar text: the explanation in text form
+    :ivar weight: a normalized score from 0 to 1 signifying how relevant this span is
+    """
+    span: Span = attr.ib(validator=attr.validators.instance_of(Span))
+    text: str = attr.ib(validator=attr.validators.instance_of(str))
+    weight: float = attr.ib(validator=attr.validators.instance_of(float))
 
 
 @attr.s(slots=True, frozen=True)

@@ -13,12 +13,12 @@ import sys
 import traceback
 import tempfile
 
-from typing import List
+from typing import List, Set
 
 import lib50
 import termcolor
 
-from . import comparators, _api, _data, _renderer, __version__
+from . import comparators, Pass, Submission, File, _api, _data, _renderer, __version__
 
 
 def excepthook(cls, exc, tb):
@@ -360,8 +360,6 @@ def main():
 
     excepthook.verbose = args.verbose
 
-    # Set max file size in bytes
-    submission_factory.max_file_size = args.max_file_size * 1024
 
     for attrib in ("submissions", "archive", "distro"):
         # Expand all patterns found in args.{submissions,archive,distro}
@@ -373,8 +371,6 @@ def main():
     except KeyError as e:
         raise _api.Error("{} is not a pass, try one of these: {}"
                            .format(e.args[0], [c.__name__ for c in _data.Pass._get_all()]))
-
-    preprocessor = _data.Preprocessor(passes[0].preprocessors)
 
     if args.profile:
         args.debug = True
@@ -403,44 +399,33 @@ def main():
             sys.exit(1)
 
     with profiler():
-        total = len(args.submissions) + len(args.archive) + len(args.distro)
-        with _api.progress_bar("Preparing", total=total, disable=args.debug) as bar:
-            # Collect all submissions, archive submissions and distro files
-            subs = submission_factory.get_all(args.submissions, preprocessor)
-            archive_subs = submission_factory.get_all(args.archive, preprocessor, is_archive=True)
-            ignored_subs = submission_factory.get_all(args.distro, preprocessor)
-            ignored_files = {f for sub in ignored_subs for f in sub.files}
-
-        print_stats(subs, archive_subs, ignored_subs, ignored_files, verbose=bool(args.verbose))
-
-        # Remove any empty submissions
-        subs = [sub for sub in subs if sub.files]
-        archive_subs = [archive for archive in archive_subs if archive.files]
+        # Load the submissions
+        subs, archive_subs, ignored_subs, ignored_files = load(submission_factory, passes, args) 
 
         # Not enough subs to compare, error
         if len(subs) + len(archive_subs) < 2:
             raise _api.Error("At least two non-empty submissions are required for a comparison.")
 
+        # Rank the submissions
         with _api.progress_bar(f"Scoring ({passes[0].__name__})", disable=args.debug) as bar:
             # Cross compare and rank all submissions, keep only top `n`
             scores = _api.rank(subs, archive_subs, ignored_files, passes[0], n=args.n)
 
-        # Get the matching spans, group them per submission
+        # Compare the matches
         pass_to_results = {}
         for pass_ in passes:
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
+            # Get the matching spans, group them per submission
             with _api.progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
                 pass_to_results[pass_] = _api.compare(scores, ignored_files, pass_)
 
-
-        # Explain results
+        # Explain the results
         for pass_ in passes:
-            formatted_names = ", ".join([exp.name for exp in pass_.explainers])
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
-            with _api.progress_bar(f"Explaining ({formatted_names}) for ({pass_.__name__})", disable=args.debug):
-                for explainer in pass_.explainers:
+            for explainer in pass_.explainers:
+                with _api.progress_bar(f"Explaining ({explainer.name}) for ({pass_.__name__})", disable=args.debug):
                     _api.explain(
                         results=pass_to_results[pass_],
                         submissions=subs,
@@ -450,12 +435,36 @@ def main():
                         pass_=pass_
                     )
 
-        # Render results
+        # Render the results
         with _api.progress_bar("Rendering", disable=args.debug):
             index = _renderer.render(pass_to_results, dest=args.output)
 
     termcolor.cprint(
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")
+
+
+def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> List[List[Submission], List[Submission], List[Submission], Set[File]]:
+    # Set max file size in bytes
+    submission_factory.max_file_size = args.max_file_size * 1024
+
+    preprocessor = _data.Preprocessor(passes[0].preprocessors)
+
+    total = len(args.submissions) + len(args.archive) + len(args.distro)
+    with _api.progress_bar("Preparing", total=total, disable=args.debug) as bar:
+        # Collect all submissions, archive submissions and distro files
+        subs = submission_factory.get_all(args.submissions, preprocessor)
+        archive_subs = submission_factory.get_all(args.archive, preprocessor, is_archive=True)
+        ignored_subs = submission_factory.get_all(args.distro, preprocessor)
+        ignored_files = {f for sub in ignored_subs for f in sub.files}
+
+    print_stats(subs, archive_subs, ignored_subs, ignored_files, verbose=bool(args.verbose))
+
+    # Remove any empty submissions
+    subs = [sub for sub in subs if sub.files]
+    archive_subs = [archive for archive in archive_subs if archive.files]
+
+    return [subs, archive_subs, ignored_subs, ignored_files]
+
 
 def set_preprocessor(pass_: _data.Pass, submissions: List[_data.Submission]) -> None:
     preprocessor = _data.Preprocessor(pass_.preprocessors)
