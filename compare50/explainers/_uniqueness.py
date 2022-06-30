@@ -6,7 +6,7 @@ from typing import List, Dict, Set
 import math
 
 from tokenize import Token
-from .. import Explainer, Explanation, Compare50Result, Span, Submission, File, Pass, Token
+from .. import Explainer, Explanation, Compare50Result, Span, Submission, File, Token
 from ..comparators._winnowing import CompareIndex # TODO fix import
 from .. import get_progress_bar
 
@@ -21,8 +21,7 @@ class Uniqueness(Explainer):
         results: List[Compare50Result], 
         submissions: List[Submission], 
         archive_submissions: List[Submission], 
-        ignored_files: Set[File], 
-        pass_: Pass
+        ignored_files: Set[File]
     ) -> List[Explanation]:
         progress_bar = get_progress_bar()
         progress_bar.reset(total=100)        
@@ -59,22 +58,17 @@ class Uniqueness(Explainer):
         # The highest score is only 2 submissions having the same fingerprint 
         max_idf_score = compute_idf(2, n_submissions)
 
-        # For each matched span
-        for matched_span, fingerprints in span_to_fingerprints.items():
-            # print(matched_span._raw_contents())
-            # print(matched_span)
-
+        # For each matched span get its fingerprints
+        for fingerprints in span_to_fingerprints.values():
             # Create an explanation for each fingerprint within the matched span
             for fingerprint, span in fingerprints:
                 n_submissions_with_fingerprint = len({span.file.submission.id for span in index[fingerprint]})
-
-                # print(fingerprint, span, len(index[fingerprint]), compute_idf(n_submissions_with_fingerprint, n_submissions))
 
                 idf_score = compute_idf(n_submissions_with_fingerprint, n_submissions)
                 percentage = n_submissions_with_fingerprint / n_submissions * 100
                 explanations.append(Explanation(
                     span=span,
-                    text=f"{percentage}% of submissions for this assignment contain this fingerprint.",
+                    text=f"{percentage}% of submissions for this assignment contain this snippet of code.",
                     weight=idf_score / max_idf_score
                 ))
         

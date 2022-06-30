@@ -9,10 +9,10 @@ import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, Explainer, Explanation, Pass, Span, Score, File, Group, BisectList, Compare50Result
+from ._data import Submission, Pass, Span, Score, File, Group, BisectList, Compare50Result
 
 
-__all__ = ["rank", "compare", "explain", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
+__all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
 
 
 class Error(Exception):
@@ -104,18 +104,6 @@ def compare(
 
     return results
 
-
-def explain(
-    results: List[Compare50Result],
-    submissions: List[Submission],
-    archive_submissions: List[Submission], 
-    ignored_files: Set[File], 
-    explainer: Explainer,
-    pass_: Pass
-) -> List[Explanation]:
-
-    explanations = explainer.explain(results, submissions, archive_submissions, ignored_files, pass_)
-    return explanations
 
 def missing_spans(file, original_tokens=None, processed_tokens=None):
     """

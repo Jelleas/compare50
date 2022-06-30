@@ -13,12 +13,13 @@ import sys
 import traceback
 import tempfile
 
-from typing import List, Set
+from collections import defaultdict
+from typing import Tuple, List, Set, Dict
 
 import lib50
 import termcolor
 
-from . import comparators, Pass, Submission, File, _api, _data, _renderer, __version__
+from . import comparators, Compare50Result, Pass, Submission, File, Explanation, _api, _data, _renderer, __version__
 
 
 def excepthook(cls, exc, tb):
@@ -360,7 +361,6 @@ def main():
 
     excepthook.verbose = args.verbose
 
-
     for attrib in ("submissions", "archive", "distro"):
         # Expand all patterns found in args.{submissions,archive,distro}
         setattr(args, attrib, expand_patterns(getattr(args, attrib)))
@@ -412,7 +412,7 @@ def main():
             scores = _api.rank(subs, archive_subs, ignored_files, passes[0], n=args.n)
 
         # Compare the matches
-        pass_to_results = {}
+        pass_to_results: Dict[Pass, List[Compare50Result]] = {}
         for pass_ in passes:
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
@@ -426,14 +426,25 @@ def main():
             
             for explainer in pass_.explainers:
                 with _api.progress_bar(f"Explaining ({explainer.name}) for ({pass_.__name__})", disable=args.debug):
-                    _api.explain(
-                        results=pass_to_results[pass_],
+                    results = pass_to_results[pass_]
+                    
+                    explanations: List[Explanation] = explainer.explain(
+                        results=results,
                         submissions=subs,
                         archive_submissions=archive_subs,
                         ignored_files=ignored_files,
-                        explainer=explainer,
-                        pass_=pass_
                     )
+
+                    # Create a map from each submissions to its results
+                    sub_to_results: Dict[Submission, Compare50Result] = defaultdict(list)
+                    for result in results:
+                        sub_to_results[result.sub_a].append(result)
+                        sub_to_results[result.sub_b].append(result)
+
+                    # Add the explanations to the results
+                    for explanation in explanations:
+                        for result in sub_to_results[explanation.span.file.submission]:
+                            result.add_explanation(explanation)
 
         # Render the results
         with _api.progress_bar("Rendering", disable=args.debug):
@@ -443,15 +454,15 @@ def main():
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")
 
 
-def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> List[List[Submission], List[Submission], List[Submission], Set[File]]:
+def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> Tuple[List[Submission], List[Submission], List[Submission], Set[File]]:
     # Set max file size in bytes
     submission_factory.max_file_size = args.max_file_size * 1024
 
     preprocessor = _data.Preprocessor(passes[0].preprocessors)
 
+    # Collect all submissions, archive submissions and distro files
     total = len(args.submissions) + len(args.archive) + len(args.distro)
     with _api.progress_bar("Preparing", total=total, disable=args.debug) as bar:
-        # Collect all submissions, archive submissions and distro files
         subs = submission_factory.get_all(args.submissions, preprocessor)
         archive_subs = submission_factory.get_all(args.archive, preprocessor, is_archive=True)
         ignored_subs = submission_factory.get_all(args.distro, preprocessor)
@@ -463,7 +474,7 @@ def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> Lis
     subs = [sub for sub in subs if sub.files]
     archive_subs = [archive for archive in archive_subs if archive.files]
 
-    return [subs, archive_subs, ignored_subs, ignored_files]
+    return (subs, archive_subs, ignored_subs, ignored_files)
 
 
 def set_preprocessor(pass_: _data.Pass, submissions: List[_data.Submission]) -> None:

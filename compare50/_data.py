@@ -327,10 +327,11 @@ class Compare50Result:
 
     The final result of comparing two submissions that is passed to the renderer.
     """
-    pass_ = attr.ib()
-    score = attr.ib()
-    groups = attr.ib()
-    ignored_spans = attr.ib()
+    pass_: Pass = attr.ib()
+    score: Score = attr.ib()
+    groups: List[Group] = attr.ib()
+    ignored_spans: List[Span] = attr.ib()
+    explanations: List[Explanation] = attr.ib(init=False, factory=list)
 
     @property
     def name(self):
@@ -346,6 +347,9 @@ class Compare50Result:
     def sub_b(self):
         """The 'second' (right) submission"""
         return self.score.sub_b
+
+    def add_explanation(self, explanation: Explanation):
+        self.explanations.append(explanation)
 
 
 def _sorted_subs(group):
