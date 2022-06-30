@@ -14,6 +14,7 @@ class Uniqueness(Explainer):
 
     def __init__(self, k=25) -> None:
         self.k = k
+        self.hash = hash(f"{self.name}{self.k}")
 
     def explain(
         self, 
@@ -68,13 +69,17 @@ class Uniqueness(Explainer):
                 explanations.append(Explanation(
                     span=span,
                     text=f"{n_submissions_with_fingerprint} submissions contain this snippet of code."\
-                    f" That is {round(percentage)}% of all submissions for this assignment.",
-                    weight=idf_score / max_idf_score
+                    f" That is {round(percentage, 1)}% of all submissions for this assignment.",
+                    weight=idf_score / max_idf_score,
+                    explainer=self
                 ))
         
         progress_bar.update(25)
 
         return explanations
+
+    def __hash__(self):
+        return self.hash
     
 
 def compute_idf(n_documents, total_n_documents: int) -> float:

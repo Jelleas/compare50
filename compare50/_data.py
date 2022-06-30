@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import List, Set
+from typing import List, Set, Dict
 
 import abc
 from collections.abc import Mapping, Sequence
+from collections import defaultdict
 import pathlib
 import numbers
-from wsgiref.validate import validator
 
 import attr
 import pygments
@@ -331,7 +331,7 @@ class Compare50Result:
     score: Score = attr.ib()
     groups: List[Group] = attr.ib()
     ignored_spans: List[Span] = attr.ib()
-    explanations: List[Explanation] = attr.ib(init=False, factory=list)
+    explanations: Dict[Explainer, List[Explanation]] = attr.ib(init=False, factory=lambda: defaultdict(list))
 
     @property
     def name(self):
@@ -349,7 +349,8 @@ class Compare50Result:
         return self.score.sub_b
 
     def add_explanation(self, explanation: Explanation):
-        self.explanations.append(explanation)
+        """Add an explanation to this result."""
+        self.explanations[explanation.explainer].append(explanation)
 
 
 def _sorted_subs(group):
@@ -369,10 +370,12 @@ class Explanation:
     :ivar span: the explained span
     :ivar text: the explanation in text form
     :ivar weight: a normalized score from 0 to 1 signifying how relevant this span is
+    :ivar explainer: the creator of this explanation
     """
     span: Span = attr.ib(validator=attr.validators.instance_of(Span))
     text: str = attr.ib(validator=attr.validators.instance_of(str))
     weight: float = attr.ib(validator=attr.validators.instance_of(float))
+    explainer: Explainer = attr.ib(validator=attr.validators.instance_of(Explainer))
 
 
 @attr.s(slots=True, frozen=True)
