@@ -68,7 +68,8 @@ class Uniqueness(Explainer):
                 percentage = n_submissions_with_fingerprint / n_submissions * 100
                 explanations.append(Explanation(
                     span=span,
-                    text=f"{percentage}% of submissions for this assignment contain this snippet of code.",
+                    text=f"{n_submissions_with_fingerprint} submissions contain this snippet of code."\
+                    f" That is {round(percentage)}% of all submissions for this assignment.",
                     weight=idf_score / max_idf_score
                 ))
         

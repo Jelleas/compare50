@@ -1,10 +1,14 @@
 import jinja2
 
+from typing import List, Dict
+
 from ._renderer import STATIC, TEMPLATES
 from .._data import IdStore
 
+from .. import Submission, Compare50Result, File, Submission, Span, Compare50Result, Explanation
+from ._cluster import Cluster
 
-def render_match(sub_a, sub_b, results, cluster, metadata):
+def render_match(sub_a: Submission, sub_b: Submission, results: List[Compare50Result], cluster: Cluster, metadata: Dict) -> str:
     files_a = files_as_dict(sub_a)
     files_b = files_as_dict(sub_b)
 
@@ -32,7 +36,7 @@ def render_match(sub_a, sub_b, results, cluster, metadata):
     return rendered_data + "\n" + match_page
 
 
-def file_as_dict(file):
+def file_as_dict(file: File) -> Dict:
     return {
         "id": file.id,
         "name": str(file.name),
@@ -41,7 +45,7 @@ def file_as_dict(file):
     }
 
 
-def files_as_dict(submission):
+def files_as_dict(submission: Submission) -> Dict:
     return {
         "id": submission.id,
         "name": str(submission.path),
@@ -50,7 +54,7 @@ def files_as_dict(submission):
     }
 
 
-def span_as_dict(span, span_id_store, ignored=False):
+def span_as_dict(span: Span, span_id_store: IdStore, ignored: bool=False) -> Dict:
     return {
         "id": span_id_store[span],
         "subId": span.file.submission.id,
@@ -61,7 +65,7 @@ def span_as_dict(span, span_id_store, ignored=False):
     }
 
 
-def pass_as_dict(result, span_id_store, group_id_store):
+def pass_as_dict(result: Compare50Result, span_id_store: IdStore, group_id_store: IdStore) -> Dict:
     spans = []
     groups = []
 
@@ -80,10 +84,21 @@ def pass_as_dict(result, span_id_store, group_id_store):
     for span in result.ignored_spans:
         spans.append(span_as_dict(span, span_id_store, ignored=True))
 
+    explanations = [explanation_as_dict(exp, span_id_store) for exp in result.explanations]
+
     return {
         "name": result.pass_.__name__,
         "docs": result.pass_.__doc__,
         "score": result.score.score,
         "spans": spans,
-        "groups": groups
+        "groups": groups,
+        "explanations": explanations
+    }
+
+
+def explanation_as_dict(explanation: Explanation, span_id_store: IdStore) -> Dict:
+    return {
+        "span": span_as_dict(explanation.span, span_id_store),
+        "text": explanation.text,
+        "weight": explanation.weight
     }
