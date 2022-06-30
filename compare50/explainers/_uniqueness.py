@@ -63,7 +63,6 @@ class Uniqueness(Explainer):
             # Create an explanation for each fingerprint within the matched span
             for fingerprint, span in fingerprints:
                 n_submissions_with_fingerprint = len({span.file.submission.id for span in index[fingerprint]})
-
                 idf_score = compute_idf(n_submissions_with_fingerprint, n_submissions)
                 percentage = n_submissions_with_fingerprint / n_submissions * 100
                 explanations.append(Explanation(
@@ -82,8 +81,11 @@ class Uniqueness(Explainer):
         return self.hash
     
 
-def compute_idf(n_documents, total_n_documents: int) -> float:
-    return 1 + math.log(n_documents / (1 + total_n_documents))
+def compute_idf(n_documents: int, total_n_documents: int) -> float:
+    if n_documents == 0 or total_n_documents == 0:
+        return 0
+    return math.log(total_n_documents / (n_documents))
+
 
 def get_span_to_fingerprints(
     results: List[Compare50Result],
