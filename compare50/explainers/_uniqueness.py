@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from tkinter.ttk import Progressbar
 from typing import List, Dict, Set
 import math
 
