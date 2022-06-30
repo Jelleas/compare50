@@ -84,7 +84,7 @@ class Uniqueness(Explainer):
 def compute_idf(n_documents: int, total_n_documents: int) -> float:
     if n_documents == 0 or total_n_documents == 0:
         return 0
-    return math.log(total_n_documents / (n_documents))
+    return math.log(total_n_documents / n_documents)
 
 
 def get_span_to_fingerprints(
