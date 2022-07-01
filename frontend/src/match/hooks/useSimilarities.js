@@ -479,19 +479,16 @@ class Explanation {
         this.span = span;
         this.explanations = explanations;
 
-        const [maxWeight, leadingExplanation] = explanations
-            .map((exp) => exp.weight)
-            .reduce(
-                ([weight, exp], [maxWeight, maxExp]) =>
-                    weight > maxWeight ? [weight, exp] : [maxWeight, maxExp],
-                [explanations[0].weight, explanations[0]]
-            );
+        const leadingExplanation = explanations.reduce(
+            (exp, maxExp) => (exp.weight > maxExp.weight ? exp : maxExp),
+            explanations[0]
+        );
 
         this.leadingExplanation = leadingExplanation;
 
-        if (maxWeight >= 0.67) {
+        if (leadingExplanation.weight >= 0.67) {
             this.level = 3;
-        } else if (maxWeight >= 0.33) {
+        } else if (leadingExplanation.weight >= 0.33) {
             this.level = 2;
         } else {
             this.level = 1;
