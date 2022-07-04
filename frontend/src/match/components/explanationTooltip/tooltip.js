@@ -2,6 +2,8 @@ import React, { useCallback, useEffect } from "react";
 import ReactTooltip from "react-tooltip";
 import "./tooltip.css";
 
+import ExplanationsView from "./explanation";
+
 const ExplanationTooltipContext = React.createContext((region) => {
     return { "data-tip": "", "data-for": "", "data-place": "" };
 });
@@ -31,7 +33,7 @@ function ExplanationTooltip({ similarities, id, children }) {
                     return "";
                 }
 
-                return explanations[0].leadingExplanation.text;
+                return <ExplanationsView explanations={explanations} />;
             }}
         ></ReactTooltip>
     );
