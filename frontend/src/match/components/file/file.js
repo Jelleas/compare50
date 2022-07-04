@@ -1,10 +1,9 @@
 import React, { useRef, useEffect, useMemo, useContext } from "react";
 
 import "../../matchview.css";
-import ExplanationsView from "../explanation/explanation";
 import "./file.css";
 import useFragments from "./useFragments";
-import { ToolTipContext } from "../tooltip";
+import { ExplanationTooltipContext } from "../explanationTooltip";
 
 function File({
     file,
@@ -205,7 +204,7 @@ function CodeSnippet({
     alertLevel,
     explanationRegion,
 }) {
-    const tooltipContext = useContext(ToolTipContext);
+    const getToolTipProps = useContext(ExplanationTooltipContext);
 
     if (lineNumber == null && alertLevel == null) {
         return <code>{line}</code>;
@@ -217,7 +216,7 @@ function CodeSnippet({
     }
 
     const style = { textAlign: "right", color: "black" };
-    const optionalProps = {};
+    let optionalProps = {};
     if (alertLevel != null) {
         const alertColors = {
             "-1": "transparent",
@@ -229,9 +228,10 @@ function CodeSnippet({
         style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
 
         if (alertLevel >= 0) {
-            optionalProps["data-tip"] = JSON.stringify(explanationRegion);
-            optionalProps["data-for"] = tooltipContext.id;
-            optionalProps["data-place"] = "left";
+            optionalProps = {
+                ...optionalProps,
+                ...getToolTipProps(explanationRegion),
+            };
         }
     }
 

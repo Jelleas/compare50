@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from "react";
 
 import File from "../file";
 import StatusBar from "./statusbar";
-import ToolTip from "../tooltip";
+import ExplanationTooltip from "../explanationTooltip";
 import TrackedVisibility from "./trackedvisibility";
 import useScroll from "./useScroll";
 
@@ -41,7 +41,7 @@ function SubmissionView({
     );
 
     return (
-        <ToolTip
+        <ExplanationTooltip
             similarities={similarities}
             id={`submission_${submission.id}_tooltip`}
         >
@@ -85,7 +85,7 @@ function SubmissionView({
                     </div>
                 </div>
             </div>
-        </ToolTip>
+        </ExplanationTooltip>
     );
 }
 

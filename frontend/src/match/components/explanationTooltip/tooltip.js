@@ -1,16 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 import ReactTooltip from "react-tooltip";
 import "./tooltip.css";
 
-const ToolTipContext = React.createContext({
-    tooltip: null,
-    id: null,
-    setContent: null,
+const ExplanationTooltipContext = React.createContext((region) => {
+    return { "data-tip": "", "data-for": "", "data-place": "" };
 });
 
-function ToolTip({ similarities, id, children }) {
-    const [content, setContent] = useState(null);
-
+function ExplanationTooltip({ similarities, id, children }) {
     const tooltip = (
         <ReactTooltip
             place="left"
@@ -24,12 +20,20 @@ function ToolTip({ similarities, id, children }) {
                     // TODO regions without explanation should not have a tooltip
                     return "";
                 }
-                return similarities.getExplanations(JSON.parse(region))[0]
-                    .leadingExplanation.text;
+                const explanations = similarities.getExplanations(
+                    JSON.parse(region)
+                );
+
+                // If there are no explanations, show nothing
+                // This can happen if one pass with explanations shows the tooltip,
+                // and a following pass has no explanations, but the tooltip still exists
+                if (explanations.length === 0) {
+                    return "";
+                }
+
+                return explanations[0].leadingExplanation.text;
             }}
-        >
-            {content}
-        </ReactTooltip>
+        ></ReactTooltip>
     );
 
     // https://www.npmjs.com/package/react-tooltip
@@ -38,17 +42,22 @@ function ToolTip({ similarities, id, children }) {
         if (similarities.pass !== undefined) ReactTooltip.rebuild();
     }, [similarities.pass]);
 
+    const getToolTipProps = useCallback(
+        (region) => {
+            return {
+                "data-tip": JSON.stringify(region),
+                "data-for": id,
+                "data-place": "left",
+            };
+        },
+        [id]
+    );
+
     return (
-        <ToolTipContext.Provider
-            value={{
-                tooltip: tooltip,
-                id: id,
-                setContent: setContent,
-            }}
-        >
+        <ExplanationTooltipContext.Provider value={getToolTipProps}>
             {tooltip}
             {children}
-        </ToolTipContext.Provider>
+        </ExplanationTooltipContext.Provider>
     );
 }
 
@@ -80,5 +89,5 @@ function mouseOnToolTip() {
 }
 ReactTooltip.prototype.mouseOnToolTip = mouseOnToolTip;
 
-export default ToolTip;
-export { ToolTipContext };
+export default ExplanationTooltip;
+export { ExplanationTooltipContext };
