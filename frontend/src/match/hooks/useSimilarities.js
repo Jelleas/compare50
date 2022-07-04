@@ -33,24 +33,35 @@ function useSimilarities(match, pass) {
     const set = (match, pass) => {
         const regionMap = initRegionMap(match, pass);
         const ignoredRegionMap = initIgnoredRegionMap(pass);
+        const explanationMap = new ExplanationMap(
+            pass.explanations["uniqueness"]
+        ); // TODO
         const spanStates = initSpanStates(regionMap);
         return {
             pass: pass,
             match: match,
             regionMap: regionMap,
             ignoredRegionMap: ignoredRegionMap,
+            explanationMap: explanationMap,
             spanStates: spanStates,
         };
     };
 
-    const wrap = ({ pass, match, regionMap, ignoredRegionMap, spanStates }) => {
+    const wrap = ({
+        pass,
+        match,
+        regionMap,
+        ignoredRegionMap,
+        explanationMap,
+        spanStates,
+    }) => {
         return new Similarities(
             pass,
             match,
             regionMap,
             ignoredRegionMap,
-            spanStates,
-            () => null
+            explanationMap,
+            spanStates
         );
     };
 
@@ -59,6 +70,7 @@ function useSimilarities(match, pass) {
         match: match,
         regionMap: initRegionMap(),
         ignoredRegionMap: initIgnoredRegionMap(),
+        explanationMap: new ExplanationMap(pass?.explanations["uniqueness"]), // TODO
         spanStates: [],
     });
 
@@ -266,13 +278,20 @@ function activate(similarities, region) {
 }
 
 /*
- * A SpanManager that manages the state of spans (parts of a file that compare50 identifies).
- * This manager maps regions of a file to the spans identified by compare50.
+ * Similarities of a submission (parts of a file that compare50 identifies).
+ * This maps regions of a file to the spans identified by compare50.
  * A region is an object of the form:
  * {fileId: 1, start: 0, end: 10}
  */
 class Similarities {
-    constructor(pass, match, regionMap, ignoredRegionMap, spanStates) {
+    constructor(
+        pass,
+        match,
+        regionMap,
+        ignoredRegionMap,
+        explanationMap,
+        spanStates
+    ) {
         this.pass = pass;
         this.match = match;
 
@@ -281,6 +300,8 @@ class Similarities {
 
         this.ignoredSpans = ignoredRegionMap.spans;
         this._ignoredRegionMap = ignoredRegionMap;
+
+        this.explanationMap = explanationMap;
 
         // An immutable map from spanId to state
         this._spanStates = spanStates;
@@ -295,7 +316,7 @@ class Similarities {
         const span = spans.find(
             (span) => this._spanStates[span.id] === Span.STATES.HIGHLIGHTED
         );
-        if (span === undefined) {
+        if (span === null) {
             return false;
         }
         return span.start === region.start;
@@ -315,7 +336,7 @@ class Similarities {
 
     isGrouped(region) {
         const span = this.getSpan(region);
-        return span !== undefined && span.groupId !== null;
+        return span !== null && span.groupId !== null;
     }
 
     isIgnored(region) {
@@ -344,6 +365,14 @@ class Similarities {
         );
     }
 
+    getExplanation(region) {
+        const span = this.getSpan(region);
+        if (span === null) {
+            return null;
+        }
+        return this.explanationMap.getExplanation(span);
+    }
+
     getSpan(region) {
         // If the region is already a span, use that
         if (region instanceof Span) {
@@ -353,7 +382,7 @@ class Similarities {
         const spans = this._regionMap.getSpans(region);
 
         if (spans.length === 0) {
-            return;
+            return null;
         }
 
         let largestSpan = spans[0];
@@ -453,6 +482,45 @@ class RegionMap {
 
     _key(region) {
         return `${region.fileId}:${region.start}`;
+    }
+}
+
+class ExplanationMap {
+    constructor(all_explanations) {
+        this.all_explanations = all_explanations;
+
+        this._map = {};
+    }
+
+    getExplanation(span) {
+        const key = this._key(span);
+        if (this._map[key] !== undefined) {
+            return this._map[key];
+        }
+
+        const explanations = this.all_explanations.filter(
+            (exp) =>
+                exp.span.fileId === span.fileId &&
+                exp.span.start >= span.start &&
+                exp.span.end <= span.end
+        );
+
+        console.log("hi");
+
+        if (explanations.length === 0) {
+            this._map[key] = null;
+            return null;
+        }
+
+        const explanation = new Explanation(span, explanations);
+
+        this._map[key] = explanation;
+
+        return explanation;
+    }
+
+    _key(span) {
+        return `${span.fileId}:${span.start}`;
     }
 }
 

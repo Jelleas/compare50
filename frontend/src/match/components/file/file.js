@@ -101,16 +101,15 @@ function Fragment({
     const hasMouseOvers =
         !isInteractionBlocked && similarities.isGrouped(fragment);
 
-    const getAlertLevel = (similarities, fragment) => {
-        return similarities.isGrouped(fragment) ? 3 : -1;
-    };
-
     // Break up the fragments into lines (keep the newline)
     // const lines = fragment.text.split(/(?<=\n)/g);
     let lines = fragment.text.split("\n");
     lines = lines.map((line, i) =>
         i !== lines.length - 1 ? line + "\n" : line
     );
+
+    const explanation = similarities.getExplanation(fragment);
+    const alertLevel = explanation === null ? -1 : explanation.level;
 
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};
@@ -122,12 +121,12 @@ function Fragment({
             optionalProps["lineNumber"] = lineNumber
                 .toString()
                 .padStart(fragment.numberOfLinesInFile.toString().length, " ");
-            optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
+            optionalProps["alertLevel"] = alertLevel;
         }
         // If this fragment is on one line, and it's the first in a matched span
         else if (isAlertForced) {
             // And the span itself is also on just one line, show alert
-            optionalProps["alertLevel"] = getAlertLevel(similarities, fragment);
+            optionalProps["alertLevel"] = alertLevel;
         }
 
         return (
