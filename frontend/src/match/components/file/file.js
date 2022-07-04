@@ -88,6 +88,13 @@ function Fragment({
     id,
     scrollTo,
 }) {
+    const getAlertLevel = (explanations) => {
+        if (explanations.length === 0) {
+            return -1;
+        }
+        return explanations[0].level;
+    };
+
     const ref = useRef(null);
 
     const isHighlighted = similarities.isHighlighted(fragment);
@@ -108,8 +115,8 @@ function Fragment({
         i !== lines.length - 1 ? line + "\n" : line
     );
 
-    const explanation = similarities.getExplanation(fragment);
-    const alertLevel = explanation === null ? -1 : explanation.level;
+    const explanations = similarities.getExplanations(fragment);
+    const alertLevel = getAlertLevel(explanations);
 
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};

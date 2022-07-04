@@ -16,34 +16,35 @@
         {"id": 1, "spans": [1, 2, 3]},
         {"id": 2, "spans": [4, 5, 6]}
     ],
-    "explanations": {
-        "uniqueness": [
-            {
-                "explainer":"uniqueness",
-                "span":{
-                    "end":8,
-                    "fileId":1,
-                    "id":2652,
-                    "ignored":false,
-                    "start":5,
-                    "subId":1
+    "explainers": [
+        {
+            "name": "uniqueness",
+            "explanations": [
+                {
+                    "span": {
+                        "end": 8,
+                        "fileId": 1,
+                        "id": 2652,
+                        "ignored": false,
+                        "start": 5,
+                        "subId": 1
+                    },
+                    "text": "694 submissions contain this snippet of code. That is 76.9% of all submissions for this assignment.",
+                    "weight": 0.04306705060507691
                 },
-                "text":"694 submissions contain this snippet of code. That is 76.9% of all submissions for this assignment.",
-                "weight":0.04306705060507691
-            },
-            {
-                "explainer":"uniqueness",
-                "span":{
-                    "end":27,
-                    "fileId":1,
-                    "id":2660,
-                    "ignored":false,
-                    "start":23,
-                    "subId":1
-                },
-                "text":"2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
-                "weight":1
-            }
-        ]
-    }
+                {
+                    "span": {
+                        "end": 27,
+                        "fileId": 1,
+                        "id": 2660,
+                        "ignored": false,
+                        "start": 23,
+                        "subId": 1
+                    },
+                    "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
+                    "weight": 1
+                }
+            ]
+        }
+    ]
 }

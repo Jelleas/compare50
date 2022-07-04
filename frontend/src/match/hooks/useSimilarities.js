@@ -33,16 +33,19 @@ function useSimilarities(match, pass) {
     const set = (match, pass) => {
         const regionMap = initRegionMap(match, pass);
         const ignoredRegionMap = initIgnoredRegionMap(pass);
-        const explanationMap = new ExplanationMap(
-            pass.explanations["uniqueness"]
-        ); // TODO
+        const explainers = pass.explainers;
+
+        const explanationMaps = explainers.map((explainer) => {
+            return new ExplanationMap(explainer.name, explainer.explanations);
+        });
+
         const spanStates = initSpanStates(regionMap);
         return {
             pass: pass,
             match: match,
             regionMap: regionMap,
             ignoredRegionMap: ignoredRegionMap,
-            explanationMap: explanationMap,
+            explanationMaps: explanationMaps,
             spanStates: spanStates,
         };
     };
@@ -52,7 +55,7 @@ function useSimilarities(match, pass) {
         match,
         regionMap,
         ignoredRegionMap,
-        explanationMap,
+        explanationMaps,
         spanStates,
     }) => {
         return new Similarities(
@@ -60,7 +63,7 @@ function useSimilarities(match, pass) {
             match,
             regionMap,
             ignoredRegionMap,
-            explanationMap,
+            explanationMaps,
             spanStates
         );
     };
@@ -70,7 +73,7 @@ function useSimilarities(match, pass) {
         match: match,
         regionMap: initRegionMap(),
         ignoredRegionMap: initIgnoredRegionMap(),
-        explanationMap: new ExplanationMap(pass?.explanations["uniqueness"]), // TODO
+        explanationMaps: [],
         spanStates: [],
     });
 
@@ -289,7 +292,7 @@ class Similarities {
         match,
         regionMap,
         ignoredRegionMap,
-        explanationMap,
+        explanationMaps,
         spanStates
     ) {
         this.pass = pass;
@@ -301,7 +304,7 @@ class Similarities {
         this.ignoredSpans = ignoredRegionMap.spans;
         this._ignoredRegionMap = ignoredRegionMap;
 
-        this.explanationMap = explanationMap;
+        this.explanationMaps = explanationMaps;
 
         // An immutable map from spanId to state
         this._spanStates = spanStates;
@@ -365,12 +368,16 @@ class Similarities {
         );
     }
 
-    getExplanation(region) {
+    getExplanations(region) {
         const span = this.getSpan(region);
         if (span === null) {
-            return null;
+            return [];
         }
-        return this.explanationMap.getExplanation(span);
+
+        const explanations = this.explanationMaps.map((expMap) =>
+            expMap.getExplanation(region)
+        );
+        return explanations.filter((exp) => exp !== null);
     }
 
     getSpan(region) {
@@ -486,7 +493,8 @@ class RegionMap {
 }
 
 class ExplanationMap {
-    constructor(all_explanations) {
+    constructor(explainer_name, all_explanations) {
+        this.name = explainer_name;
         this.all_explanations = all_explanations;
 
         this._map = {};
@@ -504,8 +512,6 @@ class ExplanationMap {
                 exp.span.start >= span.start &&
                 exp.span.end <= span.end
         );
-
-        console.log("hi");
 
         if (explanations.length === 0) {
             this._map[key] = null;
