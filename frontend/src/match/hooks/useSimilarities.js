@@ -375,7 +375,7 @@ class Similarities {
         }
 
         const explanations = this.explanationMaps.map((expMap) =>
-            expMap.getExplanation(region)
+            expMap.getExplanation(span)
         );
         return explanations.filter((exp) => exp !== null);
     }
@@ -496,7 +496,6 @@ class ExplanationMap {
     constructor(explainer_name, all_explanations) {
         this.name = explainer_name;
         this.all_explanations = all_explanations;
-
         this._map = {};
     }
 
@@ -506,11 +505,13 @@ class ExplanationMap {
             return this._map[key];
         }
 
+        // Explanations are from the same file and
+        // explanation's span is a subspan of the matched span
         const explanations = this.all_explanations.filter(
             (exp) =>
                 exp.span.fileId === span.fileId &&
-                exp.span.start >= span.start &&
-                exp.span.end <= span.end
+                exp.span.end <= span.end &&
+                exp.span.start >= span.start
         );
 
         if (explanations.length === 0) {

@@ -111,9 +111,9 @@ function Fragment({
     // Break up the fragments into lines (keep the newline)
     // const lines = fragment.text.split(/(?<=\n)/g);
     let lines = fragment.text.split("\n");
-    lines = lines.map((line, i) =>
-        i !== lines.length - 1 ? line + "\n" : line
-    );
+    lines = lines
+        .map((line, i) => (i !== lines.length - 1 ? line + "\n" : line))
+        .filter((line) => line.length > 0);
 
     const explanations = similarities.getExplanations(fragment);
     const alertLevel = getAlertLevel(explanations);
@@ -209,9 +209,9 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
     if (alertLevel != null) {
         const alertColors = {
             "-1": "transparent",
-            0: "green",
-            1: "yellow",
-            2: "orange",
+            0: "blue",
+            1: "green",
+            2: "yellow",
             3: "red",
         };
         style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;

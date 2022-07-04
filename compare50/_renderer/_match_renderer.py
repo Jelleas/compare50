@@ -84,10 +84,13 @@ def pass_as_dict(result: Compare50Result, span_id_store: IdStore, group_id_store
     for span in result.ignored_spans:
         spans.append(span_as_dict(span, span_id_store, ignored=True))
 
-    explanations_dict: Dict[str, List[Dict]] = {
-        explainer.name: [explanation_as_dict(exp, span_id_store) for exp in explanations]
+    explainers: List[Dict] = [
+        {
+            "name" : explainer.name,
+            "explanations": [explanation_as_dict(exp, span_id_store) for exp in explanations]
+        }
         for explainer, explanations in result.explanations.items()
-    }
+    ]
 
     return {
         "name": result.pass_.__name__,
@@ -95,7 +98,7 @@ def pass_as_dict(result: Compare50Result, span_id_store: IdStore, group_id_store
         "score": result.score.score,
         "spans": spans,
         "groups": groups,
-        "explanations": explanations_dict
+        "explainers": explainers
     }
 
 
@@ -104,5 +107,4 @@ def explanation_as_dict(explanation: Explanation, span_id_store: IdStore) -> Dic
         "span": span_as_dict(explanation.span, span_id_store),
         "text": explanation.text,
         "weight": explanation.weight,
-        "explainer": explanation.explainer.name
     }
