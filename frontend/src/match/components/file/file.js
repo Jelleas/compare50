@@ -1,8 +1,10 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useContext } from "react";
 
 import "../../matchview.css";
+import ExplanationsView from "../explanation/explanation";
 import "./file.css";
 import useFragments from "./useFragments";
+import { ToolTipContext } from "../tooltip";
 
 function File({
     file,
@@ -129,11 +131,13 @@ function Fragment({
                 .toString()
                 .padStart(fragment.numberOfLinesInFile.toString().length, " ");
             optionalProps["alertLevel"] = alertLevel;
+            optionalProps["explanationRegion"] = fragment;
         }
         // If this fragment is on one line, and it's the first in a matched span
         else if (isAlertForced) {
             // And the span itself is also on just one line, show alert
             optionalProps["alertLevel"] = alertLevel;
+            optionalProps["explanationRegion"] = fragment;
         }
 
         return (
@@ -194,7 +198,15 @@ function Fragment({
     );
 }
 
-function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
+function CodeSnippet({
+    line,
+    settings,
+    lineNumber,
+    alertLevel,
+    explanationRegion,
+}) {
+    const tooltipContext = useContext(ToolTipContext);
+
     if (lineNumber == null && alertLevel == null) {
         return <code>{line}</code>;
     }
@@ -217,8 +229,8 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
         style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
 
         if (alertLevel >= 0) {
-            optionalProps["data-tip"] = "Placeholder info on similarity";
-            optionalProps["data-for"] = "splitview-tooltip";
+            optionalProps["data-tip"] = JSON.stringify(explanationRegion);
+            optionalProps["data-for"] = tooltipContext.id;
             optionalProps["data-place"] = "left";
         }
     }
@@ -236,6 +248,7 @@ function CodeSnippet({ line, settings, lineNumber, alertLevel }) {
 CodeSnippet.defaultProps = {
     lineNumber: null,
     alertLevel: null,
+    explanationRegion: null,
 };
 
 function isInSingleLineSpan(fragment, fragments, fragmentIndex, similarities) {
