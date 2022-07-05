@@ -43,6 +43,7 @@ function SubmissionView({
     return (
         <ExplanationTooltip
             similarities={similarities}
+            files={files}
             id={`submission_${submission.id}_tooltip`}
         >
             <div className="column-box">

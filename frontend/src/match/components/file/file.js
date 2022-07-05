@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useMemo, useContext } from "react";
 
 import "../../matchview.css";
 import "./file.css";
-import useFragments from "./useFragments";
+import useFragments from "../../hooks/useFragments";
 import { ExplanationTooltipContext } from "../explanationTooltip";
 
 function File({
@@ -14,7 +14,11 @@ function File({
     settings,
     isInteractionBlocked,
 }) {
-    const fragments = useFragments(file, similarities);
+    const fragments = useFragments(
+        file,
+        similarities.spans,
+        similarities.ignoredSpans
+    );
 
     const coverage = useCoverage(fragments, similarities);
 

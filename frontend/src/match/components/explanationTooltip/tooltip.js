@@ -8,11 +8,11 @@ const ExplanationTooltipContext = React.createContext((region) => {
     return { "data-tip": "", "data-for": "", "data-place": "" };
 });
 
-function ExplanationTooltip({ similarities, id, children }) {
+function ExplanationTooltip({ similarities, files, id, children }) {
     const tooltip = (
         <ReactTooltip
             place="left"
-            type="info"
+            type="dark"
             effect="solid"
             id={id}
             clickable={true}
@@ -22,9 +22,9 @@ function ExplanationTooltip({ similarities, id, children }) {
                     // TODO regions without explanation should not have a tooltip
                     return "";
                 }
-                const explanations = similarities.getExplanations(
-                    JSON.parse(region)
-                );
+
+                region = JSON.parse(region);
+                const explanations = similarities.getExplanations(region);
 
                 // If there are no explanations, show nothing
                 // This can happen if one pass with explanations shows the tooltip,
@@ -33,7 +33,15 @@ function ExplanationTooltip({ similarities, id, children }) {
                     return "";
                 }
 
-                return <ExplanationsView explanations={explanations} />;
+                const file = files.find((file) => file.id === region.fileId);
+
+                return (
+                    <ExplanationsView
+                        explanations={explanations}
+                        file={file}
+                        similarities={similarities}
+                    />
+                );
             }}
         ></ReactTooltip>
     );

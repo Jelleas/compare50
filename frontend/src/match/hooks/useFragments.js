@@ -1,8 +1,6 @@
 import { useMemo } from "react";
 
-function useFragments(file, similarities) {
-    const spans = similarities.spans;
-    const ignoredSpans = similarities.ignoredSpans;
+function useFragments(file, spans, ignoredSpans) {
     return useMemo(() => {
         const fromFile = (span) => span.fileId === file.id;
         const spansFromFile = spans.filter(fromFile);
