@@ -34,6 +34,18 @@
                 },
                 {
                     "span": {
+                        "end": 10,
+                        "fileId": 1,
+                        "id": 2653,
+                        "ignored": false,
+                        "start": 7,
+                        "subId": 1
+                    },
+                    "text": "690 submissions contain this snippet of code. That is 76.9% of all submissions for this assignment.",
+                    "weight": 0.04306705060507691
+                },
+                {
+                    "span": {
                         "end": 27,
                         "fileId": 1,
                         "id": 2660,

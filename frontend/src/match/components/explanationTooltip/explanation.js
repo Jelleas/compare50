@@ -2,7 +2,7 @@ import React from "react";
 
 import useFragments from "../../hooks/useFragments";
 
-function ExplanationsView({ explanations, file, similarities }) {
+function ExplanationsView({ explanations, file }) {
     const explanation = explanations[0];
 
     const spans = explanation.explanations.map((exp) => exp.span);
@@ -23,29 +23,30 @@ function ExplanationsView({ explanations, file, similarities }) {
     }
 
     // Last fragment is outside of scope of explanation if the last explanation does not end at EOF
-    if (encompassingRegion.end !== file.content.length - 1) {
+    if (encompassingRegion.end < file.content.length) {
         fragments.pop();
     }
 
     // Assign a weight to each fragment
-    const fragToWeight = new Map();
+    const fragToExp = new Map();
     explanation.explanations.forEach((exp) => {
         fragments.forEach((frag) => {
-            if (exp.span.start <= frag.start && exp.span.end <= frag.end) {
-                let weight = exp.weight;
-                if (fragToWeight.has(frag)) {
-                    weight = Math.max(weight, fragToWeight[frag]);
+            if (frag.start >= exp.span.start && frag.end <= exp.span.end) {
+                let e = exp;
+                if (fragToExp.has(frag)) {
+                    const other_exp = fragToExp.get(frag);
+                    e = exp.weight > other_exp.weight ? exp : other_exp;
                 }
-                fragToWeight.set(frag, weight);
+                fragToExp.set(frag, e);
             }
         });
     });
 
-    const getColor = (weight) => {
-        if (weight >= 0.66) {
+    const getColor = (exp) => {
+        if (exp.weight >= 0.67) {
             return "red";
         }
-        if (weight >= 0.33) {
+        if (exp.weight >= 0.33) {
             return "yellow";
         }
         return "green";
@@ -58,7 +59,7 @@ function ExplanationsView({ explanations, file, similarities }) {
                 {fragments.map((frag) => (
                     <code
                         key={`frag_${frag.start}_${frag.end}`}
-                        style={{ color: getColor(fragToWeight.get(frag)) }}
+                        style={{ color: getColor(fragToExp.get(frag)) }}
                     >
                         {frag.text}
                     </code>

@@ -36,11 +36,7 @@ function ExplanationTooltip({ similarities, files, id, children }) {
                 const file = files.find((file) => file.id === region.fileId);
 
                 return (
-                    <ExplanationsView
-                        explanations={explanations}
-                        file={file}
-                        similarities={similarities}
-                    />
+                    <ExplanationsView explanations={explanations} file={file} />
                 );
             }}
         ></ReactTooltip>
