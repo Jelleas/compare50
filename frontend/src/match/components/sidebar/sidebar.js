@@ -442,26 +442,34 @@ function SettingsMenu() {
         <React.Fragment>
             <div style={{ marginBottom: ".25em" }}>
                 <Switch
-                    text="wrap"
+                    text="wrap&nbsp;"
                     default={settings.isSoftWrapped}
                     setOption={(val) => setSetting("isSoftWrapped", val)}
-                    tooltip="Soft Wrap long lines of code"
+                    tooltip="Soft wrap long lines of code"
                 />
             </div>
             <div style={{ marginBottom: ".25em" }}>
                 <Switch
-                    text="hide"
+                    text="hide&nbsp;"
                     default={settings.isIgnoredHidden}
                     setOption={(val) => setSetting("isIgnoredHidden", val)}
                     tooltip="Hide code that was not used in the comparison"
                 />
             </div>
-            <div>
+            <div style={{ marginBottom: ".25em" }}>
                 <Switch
-                    text="&nbsp;WS&nbsp;"
+                    text="&nbsp;WS&nbsp;&nbsp;"
                     default={!settings.isWhiteSpaceHidden}
                     setOption={(val) => setSetting("isWhiteSpaceHidden", !val)}
                     tooltip="Show leading whitespace"
+                />
+            </div>
+            <div>
+                <Switch
+                    text="color"
+                    default={settings.isColorBlind}
+                    setOption={(val) => setSetting("isColorBlind", val)}
+                    tooltip="Switch to color blind mode"
                 />
             </div>
         </React.Fragment>

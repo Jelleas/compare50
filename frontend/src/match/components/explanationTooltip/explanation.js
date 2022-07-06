@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import useFragments from "../../hooks/useFragments";
+import { SettingsContext } from "../../hooks/useSettings";
 
 function ExplanationsView({ explanations, file }) {
     const explanation = explanations[0];
@@ -76,6 +77,8 @@ function ExplanationsView({ explanations, file }) {
 }
 
 function Line({ lineNumber, fragments, explanationMap }) {
+    const [settings] = useContext(SettingsContext);
+
     const getColorAndOrbs = (weight) => {
         if (weight >= 0.8) {
             return ["magenta", "•••"];
@@ -100,13 +103,13 @@ function Line({ lineNumber, fragments, explanationMap }) {
     return (
         <>
             <code className="unselectable">
-                {orbs}
+                {settings.isColorBlind && orbs}
                 {formatLineNumber(lineNumber, fragments[0])}{" "}
             </code>
             {fragments.map((frag) => (
                 <code
                     key={`frag_${frag.start}_${frag.end}`}
-                    style={{ color: color }}
+                    style={{ color: settings.isColorBlind ? "" : color }}
                 >
                     {frag.text}
                 </code>

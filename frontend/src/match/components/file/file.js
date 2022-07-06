@@ -218,29 +218,53 @@ function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
 
     const style = { textAlign: "right", color: "black" };
     let optionalProps = {};
-    if (alertLevel != null) {
-        const alertColors = {
-            "-1": "transparent",
-            0: "blue",
-            1: "green",
-            2: "yellow",
-            3: "red",
-        };
+    let alertText = "";
 
-        if (alertLevel >= 0) {
-            style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
-
-            optionalProps = {
-                ...optionalProps,
-                ...getToolTipProps(explanationRegion),
-            };
+    // If color blindness mode is off, reserve space in sidebar for alerts
+    if (lineNumber != null) {
+        if (settings.isColorBlind) {
+            alertText = "   ";
+        } else {
+            style["borderLeft"] = `1ch solid transparent`;
         }
     }
+
+    if (alertLevel >= 0) {
+        // Use dots in case of color blindness
+        if (settings.isColorBlind) {
+            const alertDots = {
+                "-1": "   ",
+                0: "○○○",
+                1: "•○○",
+                2: "••○",
+                3: "•••",
+            };
+
+            alertText = alertDots[alertLevel];
+            // Use colored border otherwise
+        } else {
+            const alertColors = {
+                "-1": "transparent",
+                0: "green",
+                1: "yellow",
+                2: "red",
+                3: "magenta",
+            };
+
+            style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
+        }
+        optionalProps = {
+            ...optionalProps,
+            ...getToolTipProps(explanationRegion),
+        };
+    }
+
+    const lineNumberText = lineNumber == null ? "" : ` ${lineNumber} `;
 
     return (
         <>
             <code className="unselectable" style={style} {...optionalProps}>
-                {lineNumber == null ? "" : ` ${lineNumber} `}
+                {alertText + lineNumberText}
             </code>
             <code>{line}</code>
         </>

@@ -5,6 +5,7 @@ function getDefaultSettings() {
         isSoftWrapped: true,
         isWhiteSpaceHidden: true,
         isIgnoredHidden: false,
+        isColorBlind: false,
     };
 }
 

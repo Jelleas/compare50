@@ -561,12 +561,14 @@ class Explanation {
 
         this.leadingExplanation = leadingExplanation;
 
-        if (leadingExplanation.weight >= 0.67) {
+        if (leadingExplanation.weight >= 0.8) {
             this.level = 3;
-        } else if (leadingExplanation.weight >= 0.33) {
+        } else if (leadingExplanation.weight >= 0.67) {
             this.level = 2;
-        } else {
+        } else if (leadingExplanation.weight >= 0.33) {
             this.level = 1;
+        } else {
+            this.level = 0;
         }
     }
 }
