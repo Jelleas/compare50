@@ -2,8 +2,9 @@ import React, { useContext } from "react";
 
 import useFragments from "../../hooks/useFragments";
 import { SettingsContext } from "../../hooks/useSettings";
+import { replaceLeadingWhitespace } from "../file/file";
 
-function ExplanationsView({ explanations, file }) {
+function ExplanationsView({ explanations, file, similarities }) {
     const explanation = explanations[0];
 
     const spans = explanation.explanations.map((exp) => exp.span);
@@ -16,19 +17,25 @@ function ExplanationsView({ explanations, file }) {
         };
     }, spans[0]);
 
+    const overlaps = (region, otherRegion) =>
+        !(region.end < otherRegion.start || region.start > otherRegion.end);
+    const ignoredSpans = similarities.ignoredSpans
+        .filter((span) => span.fileId === file.id)
+        .filter((span) => overlaps(span, encompassingRegion));
+
     const newLineRegions = getNewLineRegions(file, encompassingRegion);
 
-    const fragments = useFragments(file, spans, newLineRegions);
+    let fragments = useFragments(
+        file,
+        spans,
+        newLineRegions.concat(ignoredSpans)
+    );
 
-    // First fragment is outside of scope of explanation if the first explanation does not start at 0
-    if (encompassingRegion.start !== 0) {
-        fragments.shift();
-    }
-
-    // Last fragment is outside of scope of explanation if the last explanation does not end at EOF
-    if (encompassingRegion.end < file.content.length) {
-        fragments.pop();
-    }
+    fragments = fragments.filter(
+        (frag) =>
+            frag.start >= encompassingRegion.start &&
+            frag.end <= encompassingRegion.end
+    );
 
     // Assign an explanation to each fragment
     const fragToExp = new Map();
@@ -58,13 +65,12 @@ function ExplanationsView({ explanations, file }) {
         fragmentsPerLine.pop();
     }
 
-    const startingLineNumber = getStartingLineNumber(file, encompassingRegion);
-    const lineElems = fragmentsPerLine.map((frags, i) => (
+    const lineElems = fragmentsPerLine.map((frags) => (
         <Line
             key={`line_${frags[0].start}_${frags[frags.length - 1].end}`}
             fragments={frags}
             explanationMap={fragToExp}
-            lineNumber={startingLineNumber + i}
+            similarities={similarities}
         />
     ));
 
@@ -76,7 +82,7 @@ function ExplanationsView({ explanations, file }) {
     );
 }
 
-function Line({ lineNumber, fragments, explanationMap }) {
+function Line({ fragments, explanationMap, similarities }) {
     const [settings] = useContext(SettingsContext);
 
     const getColorAndOrbs = (weight) => {
@@ -89,43 +95,67 @@ function Line({ lineNumber, fragments, explanationMap }) {
         if (weight >= 0.33) {
             return ["yellow", "•○○"];
         }
-        return ["green", "○○○"];
+        if (weight >= 0) {
+            return ["green", "○○○"];
+        }
+        return ["", "   "];
     };
 
+    // Get the average weight of all explanations
     const explanations = fragments.map((f) => explanationMap.get(f));
     const sumWeight = explanations
         .map((e) => e.weight)
         .reduce((weight, otherWeight) => weight + otherWeight, 0);
-    const avgWeight = sumWeight / explanations.length;
+    let avgWeight = sumWeight / explanations.length;
 
+    // If all fragments on this line are ignored, set average weight to -1
+    if (fragments.every((frag) => similarities.isIgnored(frag))) {
+        avgWeight = -1;
+    }
+
+    // Get colors and alternatively orbs for those colorblind
     const [color, orbs] = getColorAndOrbs(avgWeight);
+
+    // Generate code elements for each frag
+    const codeElems = fragments.map((frag) => {
+        const key = `frag_${frag.start}_${frag.end}`;
+        const text = settings.isWhiteSpaceHidden
+            ? frag.text
+            : replaceLeadingWhitespace(frag.text);
+
+        const style = {};
+        if (similarities.isIgnored(frag)) {
+            if (settings.isIgnoredHidden) {
+                style.visibility = "hidden";
+            } else {
+                style.color = "#666666";
+            }
+        } else if (!settings.isColorBlind) {
+            style.color = color;
+        }
+
+        return (
+            <code key={key} style={style}>
+                {text}
+            </code>
+        );
+    });
 
     return (
         <>
             <code className="unselectable">
                 {settings.isColorBlind && orbs}
-                {formatLineNumber(lineNumber, fragments[0])}{" "}
+                {formatLineNumber(fragments[0])}{" "}
             </code>
-            {fragments.map((frag) => (
-                <code
-                    key={`frag_${frag.start}_${frag.end}`}
-                    style={{ color: settings.isColorBlind ? "" : color }}
-                >
-                    {frag.text}
-                </code>
-            ))}
+            {codeElems}
         </>
     );
 }
 
-function formatLineNumber(lineNumber, fragment) {
-    return lineNumber
+function formatLineNumber(fragment) {
+    return fragment.startingLineNumber
         .toString()
         .padStart(fragment.numberOfLinesInFile.toString().length, " ");
-}
-
-function getStartingLineNumber(file, region) {
-    return (file.content.slice(0, region.start).match(/\n/g) || []).length + 1;
 }
 
 function getNewLineRegions(file, encompassingRegion) {

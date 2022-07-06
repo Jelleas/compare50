@@ -376,3 +376,4 @@ function useCoverage(fragments, similarities) {
 }
 
 export default File;
+export { replaceLeadingWhitespace };

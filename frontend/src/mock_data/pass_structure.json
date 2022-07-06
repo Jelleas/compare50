@@ -55,6 +55,18 @@
                     },
                     "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
                     "weight": 1
+                },
+                {
+                    "span": {
+                        "end": 40,
+                        "fileId": 2,
+                        "id": 2661,
+                        "ignored": false,
+                        "start": 10,
+                        "subId": 1
+                    },
+                    "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
+                    "weight": 1
                 }
             ]
         }
