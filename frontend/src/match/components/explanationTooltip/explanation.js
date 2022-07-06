@@ -77,8 +77,56 @@ function ExplanationsView({ explanations, file, similarities }) {
     return (
         <div>
             <p>{explanation.leadingExplanation.text}</p>
+            <Legenda />
             <pre>{lineElems}</pre>
         </div>
+    );
+}
+
+function Legenda() {
+    const [settings] = useContext(SettingsContext);
+    // https://stackoverflow.com/questions/37909134/nbsp-jsx-not-working
+    const spacing = "\u00A0\u00A0\u00A0";
+
+    if (!settings.isColorBlind) {
+        return (
+            <p>
+                <span style={{ color: "magenta" }}>
+                    █ = very rare
+                    {spacing}
+                </span>
+                <span style={{ color: "red" }}>
+                    █ = rare
+                    {spacing}
+                </span>
+                <span style={{ color: "yellow" }}>
+                    █ = uncommon
+                    {spacing}
+                </span>
+                <span style={{ color: "green" }}>
+                    █ = common
+                    {spacing}
+                </span>
+                <span style={{ color: "#666666" }}>█ = ignored</span>
+            </p>
+        );
+    }
+
+    return (
+        <p>
+            <span>
+                <code>•••</code> = very rare{spacing}
+            </span>
+            <span>
+                <code>••○</code> = rare{spacing}
+            </span>
+            <span>
+                <code>•○○</code> = uncommon{spacing}
+            </span>
+            <span>
+                <code>○○○</code> = common{spacing}
+            </span>
+        </p>
     );
 }
 
