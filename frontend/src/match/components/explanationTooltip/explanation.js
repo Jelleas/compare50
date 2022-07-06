@@ -76,14 +76,17 @@ function ExplanationsView({ explanations, file }) {
 }
 
 function Line({ lineNumber, fragments, explanationMap }) {
-    const getColor = (weight) => {
+    const getColorAndOrbs = (weight) => {
+        if (weight >= 0.8) {
+            return ["magenta", "•••"];
+        }
         if (weight >= 0.67) {
-            return "red";
+            return ["red", "••○"];
         }
         if (weight >= 0.33) {
-            return "yellow";
+            return ["yellow", "•○○"];
         }
-        return "green";
+        return ["green", "○○○"];
     };
 
     const explanations = fragments.map((f) => explanationMap.get(f));
@@ -92,15 +95,18 @@ function Line({ lineNumber, fragments, explanationMap }) {
         .reduce((weight, otherWeight) => weight + otherWeight, 0);
     const avgWeight = sumWeight / explanations.length;
 
+    const [color, orbs] = getColorAndOrbs(avgWeight);
+
     return (
         <>
             <code className="unselectable">
+                {orbs}
                 {formatLineNumber(lineNumber, fragments[0])}{" "}
             </code>
             {fragments.map((frag) => (
                 <code
                     key={`frag_${frag.start}_${frag.end}`}
-                    style={{ color: getColor(avgWeight) }}
+                    style={{ color: color }}
                 >
                     {frag.text}
                 </code>

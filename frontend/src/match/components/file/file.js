@@ -210,13 +210,13 @@ function CodeSnippet({
 }) {
     const getToolTipProps = useContext(ExplanationTooltipContext);
 
-    if (lineNumber == null && alertLevel == null) {
-        return <code>{line}</code>;
-    }
-
     // If starting on a newline, make the leading whitespace visible
     if (!settings.isWhiteSpaceHidden) {
         line = replaceLeadingWhitespace(line);
+    }
+
+    if (lineNumber == null && alertLevel == null) {
+        return <code>{line}</code>;
     }
 
     const style = { textAlign: "right", color: "black" };
@@ -229,9 +229,10 @@ function CodeSnippet({
             2: "yellow",
             3: "red",
         };
-        style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
 
         if (alertLevel >= 0) {
+            style["borderLeft"] = `1ch solid ${alertColors[alertLevel]}`;
+
             optionalProps = {
                 ...optionalProps,
                 ...getToolTipProps(explanationRegion),
