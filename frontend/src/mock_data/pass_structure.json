@@ -4,7 +4,7 @@
     "score": 28,
     "spans": [
         {"id": 1, "subId": 1, "fileId": 1, "start": 5, "end": 10, "ignored": false},
-        {"id": 2, "subId": 1, "fileId": 1, "start": 20, "end": 30, "ignored": false},
+        {"id": 2, "subId": 1, "fileId": 1, "start": 40, "end": 90, "ignored": false},
         {"id": 3, "subId": 7, "fileId": 3, "start": 20, "end": 30, "ignored": false},
         {"id": 4, "subId": 1, "fileId": 2, "start": 10, "end": 40, "ignored": false},
         {"id": 5, "subId": 7, "fileId": 4, "start": 20, "end": 50, "ignored": false},
@@ -46,11 +46,11 @@
                 },
                 {
                     "span": {
-                        "end": 27,
+                        "end": 90,
                         "fileId": 1,
                         "id": 2660,
                         "ignored": false,
-                        "start": 23,
+                        "start": 50,
                         "subId": 1
                     },
                     "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",

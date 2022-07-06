@@ -15,7 +15,9 @@ function ExplanationsView({ explanations, file }) {
         };
     }, spans[0]);
 
-    const fragments = useFragments(file, spans, []);
+    const newLineRegions = getNewLineRegions(file, encompassingRegion);
+
+    const fragments = useFragments(file, spans, newLineRegions);
 
     // First fragment is outside of scope of explanation if the first explanation does not start at 0
     if (encompassingRegion.start !== 0) {
@@ -27,7 +29,7 @@ function ExplanationsView({ explanations, file }) {
         fragments.pop();
     }
 
-    // Assign a weight to each fragment
+    // Assign an explanation to each fragment
     const fragToExp = new Map();
     explanation.explanations.forEach((exp) => {
         fragments.forEach((frag) => {
@@ -42,31 +44,99 @@ function ExplanationsView({ explanations, file }) {
         });
     });
 
-    const getColor = (exp) => {
-        if (exp.weight >= 0.67) {
+    // Group all fragments on the same line
+    const fragmentsPerLine = [[]];
+    fragments.forEach((frag) => {
+        fragmentsPerLine[fragmentsPerLine.length - 1].push(frag);
+
+        if (frag.text.endsWith("\n")) {
+            fragmentsPerLine.push([]);
+        }
+    });
+    if (fragmentsPerLine[fragmentsPerLine.length - 1].length === 0) {
+        fragmentsPerLine.pop();
+    }
+
+    const startingLineNumber = getStartingLineNumber(file, encompassingRegion);
+    const lineElems = fragmentsPerLine.map((frags, i) => (
+        <Line
+            key={`line_${frags[0].start}_${frags[frags.length - 1].end}`}
+            fragments={frags}
+            explanationMap={fragToExp}
+            lineNumber={startingLineNumber + i}
+        />
+    ));
+
+    return (
+        <div>
+            <p>{explanation.leadingExplanation.text}</p>
+            <pre>{lineElems}</pre>
+        </div>
+    );
+}
+
+function Line({ lineNumber, fragments, explanationMap }) {
+    const getColor = (weight) => {
+        if (weight >= 0.67) {
             return "red";
         }
-        if (exp.weight >= 0.33) {
+        if (weight >= 0.33) {
             return "yellow";
         }
         return "green";
     };
 
+    const explanations = fragments.map((f) => explanationMap.get(f));
+    const sumWeight = explanations
+        .map((e) => e.weight)
+        .reduce((weight, otherWeight) => weight + otherWeight, 0);
+    const avgWeight = sumWeight / explanations.length;
+
     return (
-        <div>
-            <p>{explanation.leadingExplanation.text}</p>
-            <pre>
-                {fragments.map((frag) => (
-                    <code
-                        key={`frag_${frag.start}_${frag.end}`}
-                        style={{ color: getColor(fragToExp.get(frag)) }}
-                    >
-                        {frag.text}
-                    </code>
-                ))}
-            </pre>
-        </div>
+        <>
+            <code className="unselectable">
+                {formatLineNumber(lineNumber, fragments[0])}{" "}
+            </code>
+            {fragments.map((frag) => (
+                <code
+                    key={`frag_${frag.start}_${frag.end}`}
+                    style={{ color: getColor(avgWeight) }}
+                >
+                    {frag.text}
+                </code>
+            ))}
+        </>
     );
+}
+
+function formatLineNumber(lineNumber, fragment) {
+    return lineNumber
+        .toString()
+        .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+}
+
+function getStartingLineNumber(file, region) {
+    return (file.content.slice(0, region.start).match(/\n/g) || []).length + 1;
+}
+
+function getNewLineRegions(file, encompassingRegion) {
+    const content = file.content.slice(
+        encompassingRegion.start,
+        encompassingRegion.end
+    );
+
+    const newLineRegions = [];
+    [...content].forEach((char, index) => {
+        if (char === "\n") {
+            const region = {
+                start: index + encompassingRegion.start + 1,
+                end: index + encompassingRegion.start + 1,
+                fileId: encompassingRegion.fileId,
+            };
+            newLineRegions.push(region);
+        }
+    });
+    return newLineRegions;
 }
 
 export default ExplanationsView;
