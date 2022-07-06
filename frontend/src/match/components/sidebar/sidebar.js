@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useContext } from "react";
 import ReactTooltip from "react-tooltip";
 
 import Graph from "../../../graph/graph";
@@ -7,15 +7,9 @@ import render50 from "../../render50";
 
 import "../../matchview.css";
 import "./sidebar.css";
+import { SettingsContext } from "../../hooks/useSettings";
 
-function SideBar({
-    isLoaded,
-    settings,
-    setSetting,
-    similarities,
-    dispatchSimilarities,
-    graphData,
-}) {
+function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
     const style = {
         margin: "auto",
         marginBottom: ".5em",
@@ -70,20 +64,7 @@ function SideBar({
                     />
                 </div>
                 <div className="row auto" style={style}>
-                    <ConfigMenu
-                        softWrap={settings.isSoftWrapped}
-                        setSoftWrap={(softWrap) =>
-                            setSetting("isSoftWrapped", softWrap)
-                        }
-                        hideIgnored={settings.isIgnoredHidden}
-                        setHideIgnored={(hideIgnored) =>
-                            setSetting("isIgnoredHidden", hideIgnored)
-                        }
-                        showWhiteSpace={!settings.isWhiteSpaceHidden}
-                        setShowWhiteSpace={(showWhiteSpace) =>
-                            setSetting("isWhiteSpaceHidden", !showWhiteSpace)
-                        }
-                    />
+                    <SettingsMenu />
                 </div>
                 <div className="row auto" style={style}>
                     <ExportMenu match={match} />
@@ -454,30 +435,32 @@ function ExportMenu(props) {
     );
 }
 
-function ConfigMenu(props) {
+function SettingsMenu() {
+    const [settings, setSetting] = useContext(SettingsContext);
+
     return (
         <React.Fragment>
             <div style={{ marginBottom: ".25em" }}>
                 <Switch
                     text="wrap"
-                    default={props.softWrap}
-                    setOption={props.setSoftWrap}
+                    default={settings.isSoftWrapped}
+                    setOption={(val) => setSetting("isSoftWrapped", val)}
                     tooltip="Soft Wrap long lines of code"
                 />
             </div>
             <div style={{ marginBottom: ".25em" }}>
                 <Switch
                     text="hide"
-                    default={props.hideIgnored}
-                    setOption={props.setHideIgnored}
+                    default={settings.isIgnoredHidden}
+                    setOption={(val) => setSetting("isIgnoredHidden", val)}
                     tooltip="Hide code that was not used in the comparison"
                 />
             </div>
             <div>
                 <Switch
                     text="&nbsp;WS&nbsp;"
-                    default={props.showWhiteSpace}
-                    setOption={props.setShowWhiteSpace}
+                    default={!settings.isWhiteSpaceHidden}
+                    setOption={(val) => setSetting("isWhiteSpaceHidden", !val)}
                     tooltip="Show leading whitespace"
                 />
             </div>

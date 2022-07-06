@@ -4,6 +4,7 @@ import "../../matchview.css";
 import "./file.css";
 import useFragments from "../../hooks/useFragments";
 import { ExplanationTooltipContext } from "../explanationTooltip";
+import { SettingsContext } from "../../hooks/useSettings";
 
 function File({
     file,
@@ -11,7 +12,6 @@ function File({
     dispatchSimilarities,
     updateCoverage,
     scrollTo,
-    settings,
     isInteractionBlocked,
 }) {
     const fragments = useFragments(
@@ -21,6 +21,8 @@ function File({
     );
 
     const coverage = useCoverage(fragments, similarities);
+
+    const [settings] = useContext(SettingsContext);
 
     const _updateCoverage = updateCoverage;
     useEffect(() => {
@@ -50,7 +52,6 @@ function File({
                     i,
                     similarities
                 )}
-                settings={settings}
                 scrollTo={scrollTo}
                 similarities={similarities}
                 dispatchSimilarities={dispatchSimilarities}
@@ -87,12 +88,13 @@ function Fragment({
     similarities,
     dispatchSimilarities,
     isInteractionBlocked,
-    settings,
     isOnNewline,
     isAlertForced,
     id,
     scrollTo,
 }) {
+    const [settings] = useContext(SettingsContext);
+
     const getAlertLevel = (explanations) => {
         if (explanations.length === 0) {
             return -1;
@@ -147,7 +149,6 @@ function Fragment({
             <CodeSnippet
                 key={`code_${id}_${lineIndex}`}
                 line={line}
-                settings={settings}
                 {...optionalProps}
             ></CodeSnippet>
         );
@@ -201,13 +202,9 @@ function Fragment({
     );
 }
 
-function CodeSnippet({
-    line,
-    settings,
-    lineNumber,
-    alertLevel,
-    explanationRegion,
-}) {
+function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
+    const [settings] = useContext(SettingsContext);
+
     const getToolTipProps = useContext(ExplanationTooltipContext);
 
     // If starting on a newline, make the leading whitespace visible
