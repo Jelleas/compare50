@@ -35,6 +35,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
                         settings={settings}
+                        toolTipPlace={i === 0 ? "right" : "left"}
                     />
                 </div>
             ))}

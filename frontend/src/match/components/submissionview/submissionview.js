@@ -14,6 +14,7 @@ function SubmissionView({
     similarities,
     dispatchSimilarities,
     settings,
+    toolTipPlace,
 }) {
     const [fileInView, updateFileVisibility] = useMax();
 
@@ -45,6 +46,7 @@ function SubmissionView({
             similarities={similarities}
             files={files}
             id={`submission_${submission.id}_tooltip`}
+            place={toolTipPlace}
         >
             <div className="column-box">
                 <div className="row auto">
@@ -89,6 +91,10 @@ function SubmissionView({
         </ExplanationTooltip>
     );
 }
+
+SubmissionView.defaultProps = {
+    toolTipPlace: "left",
+};
 
 function useMax() {
     const [maxItem, setMaxItem] = useState(undefined);

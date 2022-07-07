@@ -6,7 +6,7 @@
         {"id": 1, "subId": 1, "fileId": 1, "start": 5, "end": 10, "ignored": false},
         {"id": 2, "subId": 1, "fileId": 1, "start": 40, "end": 90, "ignored": false},
         {"id": 3, "subId": 7, "fileId": 3, "start": 20, "end": 30, "ignored": false},
-        {"id": 4, "subId": 1, "fileId": 2, "start": 10, "end": 40, "ignored": false},
+        {"id": 4, "subId": 1, "fileId": 2, "start": 10, "end": 1000, "ignored": false},
         {"id": 5, "subId": 7, "fileId": 4, "start": 20, "end": 50, "ignored": false},
         {"id": 6, "subId": 7, "fileId": 4, "start": 300, "end": 350, "ignored": false},
         {"id": 7, "subId": 1, "fileId": 2, "start": 0, "end": 25, "ignored": true},
@@ -58,12 +58,24 @@
                 },
                 {
                     "span": {
-                        "end": 40,
+                        "end": 1000,
                         "fileId": 2,
                         "id": 2661,
                         "ignored": false,
                         "start": 10,
                         "subId": 1
+                    },
+                    "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
+                    "weight": 1
+                },
+                {
+                    "span": {
+                        "end": 30,
+                        "fileId": 3,
+                        "id": 2661,
+                        "ignored": false,
+                        "start": 20,
+                        "subId": 2
                     },
                     "text": "2 submissions contain this snippet of code. That is 0.2% of all submissions for this assignment.",
                     "weight": 1

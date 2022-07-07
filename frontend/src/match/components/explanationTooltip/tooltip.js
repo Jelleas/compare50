@@ -1,29 +1,31 @@
 import React, { useCallback, useEffect } from "react";
-import ReactTooltip from "react-tooltip";
+// import ReactTooltip from "react-tooltip";
 import "./tooltip.css";
+
+import ReactTooltip from "../../../../node_modules/react-tooltip/dist/index.js";
 
 import ExplanationsView from "./explanation";
 
-const ExplanationTooltipContext = React.createContext((region) => {
+const ExplanationTooltipContext = React.createContext((region, lineNumber) => {
     return { "data-tip": "", "data-for": "", "data-place": "" };
 });
 
-function ExplanationTooltip({ similarities, files, id, children }) {
+function ExplanationTooltip({ similarities, files, id, children, place }) {
     const tooltip = (
         <ReactTooltip
-            place="left"
+            place={place}
             type="dark"
             effect="solid"
             id={id}
             clickable={true}
             delayHide={300}
-            getContent={(region) => {
-                if (region === null) {
+            getContent={(data) => {
+                if (data === null) {
                     // TODO regions without explanation should not have a tooltip
                     return "";
                 }
 
-                region = JSON.parse(region);
+                const [region, lineNumber] = JSON.parse(data);
                 const explanations = similarities.getExplanations(region);
 
                 // If there are no explanations, show nothing
@@ -40,6 +42,7 @@ function ExplanationTooltip({ similarities, files, id, children }) {
                         explanations={explanations}
                         file={file}
                         similarities={similarities}
+                        lineNumber={lineNumber}
                     />
                 );
             }}
@@ -53,11 +56,10 @@ function ExplanationTooltip({ similarities, files, id, children }) {
     }, [similarities.pass]);
 
     const getToolTipProps = useCallback(
-        (region) => {
+        (region, lineNumber) => {
             return {
-                "data-tip": JSON.stringify(region),
+                "data-tip": JSON.stringify([region, lineNumber]),
                 "data-for": id,
-                "data-place": "left",
             };
         },
         [id]
@@ -70,6 +72,10 @@ function ExplanationTooltip({ similarities, files, id, children }) {
         </ExplanationTooltipContext.Provider>
     );
 }
+
+ExplanationTooltip.defaultProps = {
+    place: "right",
+};
 
 /*
 Monkey patch of React Tooltip. 

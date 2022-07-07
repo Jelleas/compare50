@@ -1,10 +1,12 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
+import "react-virtualized/styles.css";
+import { List, CellMeasurer, CellMeasurerCache } from "react-virtualized";
 
 import useFragments from "../../hooks/useFragments";
 import { SettingsContext } from "../../hooks/useSettings";
 import { replaceLeadingWhitespace } from "../file/file";
 
-function ExplanationsView({ explanations, file, similarities }) {
+function ExplanationsView({ explanations, file, similarities, lineNumber }) {
     const explanation = explanations[0];
 
     const spans = explanation.explanations.map((exp) => exp.span);
@@ -74,11 +76,87 @@ function ExplanationsView({ explanations, file, similarities }) {
         />
     ));
 
+    const [startIndex, endIndex] = getVisibleLineIndices(
+        fragments,
+        lineNumber,
+        lineElems.length,
+        15
+    );
+
+    // In this example, average cell width is assumed to be about 100px.
+    // This value will be used for the initial `Grid` layout.
+    // Cell measurements smaller than 75px should also be rounded up.
+    // Height is not dynamic.
+    const cache = new CellMeasurerCache({
+        defaultWidth: 15,
+        minHeight: 15,
+        fixedWidth: true,
+    });
+
+    const rowRenderer = ({
+        key,
+        index,
+        parent,
+        isScrolling,
+        isVisible,
+        style,
+    }) => {
+        const frags = fragmentsPerLine[index];
+
+        const line = (
+            <CellMeasurer
+                cache={cache}
+                columnIndex={0}
+                key={key}
+                parent={parent}
+                rowIndex={index}
+            >
+                {({ registerChild }) => (
+                    <Line
+                        ref={registerChild}
+                        key={key}
+                        fragments={frags}
+                        explanationMap={fragToExp}
+                        similarities={similarities}
+                        style={style}
+                    />
+                )}
+            </CellMeasurer>
+        );
+
+        return line;
+    };
+
+    const dimensions = useWindowDimensions();
+
+    const listRef = useRef();
+
+    useEffect(() => {
+        if (listRef.current != null) {
+            listRef.current.recomputeRowHeights();
+        }
+    });
+
     return (
         <div>
             <p>{explanation.leadingExplanation.text}</p>
             <Legenda />
-            <pre>{lineElems}</pre>
+            <pre className="softwrap">
+                <List
+                    ref={listRef}
+                    width={550}
+                    height={Math.min(
+                        dimensions.height - 300,
+                        lineElems.length * 15
+                    )}
+                    scrollToIndex={lineNumber - fragments[0].startingLineNumber}
+                    scrollToAlignment={"center"}
+                    rowCount={lineElems.length}
+                    rowHeight={cache.rowHeight}
+                    rowRenderer={rowRenderer}
+                    deferredMeasurementCache={cache}
+                ></List>
+            </pre>
         </div>
     );
 }
@@ -130,74 +208,131 @@ function Legenda() {
     );
 }
 
-function Line({ fragments, explanationMap, similarities }) {
-    const [settings] = useContext(SettingsContext);
+const Line = React.forwardRef(
+    ({ fragments, explanationMap, similarities, style }, ref) => {
+        const [settings] = useContext(SettingsContext);
 
-    const getColorAndOrbs = (weight) => {
-        if (weight >= 0.8) {
-            return ["magenta", "•••"];
-        }
-        if (weight >= 0.67) {
-            return ["red", "••○"];
-        }
-        if (weight >= 0.33) {
-            return ["yellow", "•○○"];
-        }
-        if (weight >= 0) {
-            return ["green", "○○○"];
-        }
-        return ["", "   "];
-    };
-
-    // Get the average weight of all explanations
-    const explanations = fragments.map((f) => explanationMap.get(f));
-    const sumWeight = explanations
-        .map((e) => e.weight)
-        .reduce((weight, otherWeight) => weight + otherWeight, 0);
-    let avgWeight = sumWeight / explanations.length;
-
-    // If all fragments on this line are ignored, set average weight to -1
-    if (fragments.every((frag) => similarities.isIgnored(frag))) {
-        avgWeight = -1;
-    }
-
-    // Get colors and alternatively orbs for those colorblind
-    const [color, orbs] = getColorAndOrbs(avgWeight);
-
-    // Generate code elements for each frag
-    const codeElems = fragments.map((frag) => {
-        const key = `frag_${frag.start}_${frag.end}`;
-        const text = settings.isWhiteSpaceHidden
-            ? frag.text
-            : replaceLeadingWhitespace(frag.text);
-
-        const style = {};
-        if (similarities.isIgnored(frag)) {
-            if (settings.isIgnoredHidden) {
-                style.visibility = "hidden";
-            } else {
-                style.color = "#666666";
+        const getColorAndOrbs = (weight) => {
+            if (weight >= 0.8) {
+                return ["magenta", "•••"];
             }
-        } else if (!settings.isColorBlind) {
-            style.color = color;
+            if (weight >= 0.67) {
+                return ["red", "••○"];
+            }
+            if (weight >= 0.33) {
+                return ["yellow", "•○○"];
+            }
+            if (weight >= 0) {
+                return ["green", "○○○"];
+            }
+            return ["", "   "];
+        };
+
+        // Get the average weight of all explanations
+        const explanations = fragments.map((f) => explanationMap.get(f));
+        const sumWeight = explanations
+            .map((e) => e.weight)
+            .reduce((weight, otherWeight) => weight + otherWeight, 0);
+        let avgWeight = sumWeight / explanations.length;
+
+        // If all fragments on this line are ignored, set average weight to -1
+        if (fragments.every((frag) => similarities.isIgnored(frag))) {
+            avgWeight = -1;
         }
+
+        // Get colors and alternatively orbs for those colorblind
+        const [color, orbs] = getColorAndOrbs(avgWeight);
+
+        // Generate code elements for each frag
+        const codeElems = fragments.map((frag) => {
+            const key = `frag_${frag.start}_${frag.end}`;
+            const text = settings.isWhiteSpaceHidden
+                ? frag.text
+                : replaceLeadingWhitespace(frag.text);
+
+            const style = {};
+            if (similarities.isIgnored(frag)) {
+                if (settings.isIgnoredHidden) {
+                    style.visibility = "hidden";
+                } else {
+                    style.color = "#666666";
+                }
+            } else if (!settings.isColorBlind) {
+                style.color = color;
+            }
+
+            return (
+                <code key={key} style={style}>
+                    {text}
+                </code>
+            );
+        });
 
         return (
-            <code key={key} style={style}>
-                {text}
-            </code>
+            <span style={style} ref={ref}>
+                <code className="unselectable">
+                    {settings.isColorBlind && orbs}
+                    {formatLineNumber(fragments[0])}{" "}
+                </code>
+                {codeElems}
+            </span>
         );
-    });
+    }
+);
 
-    return (
-        <>
-            <code className="unselectable">
-                {settings.isColorBlind && orbs}
-                {formatLineNumber(fragments[0])}{" "}
-            </code>
-            {codeElems}
-        </>
+function getWindowDimensions() {
+    const { innerWidth: width, innerHeight: height } = window;
+    return {
+        width,
+        height,
+    };
+}
+
+// https://stackoverflow.com/questions/36862334/get-viewport-window-height-in-reactjs
+function useWindowDimensions() {
+    const [windowDimensions, setWindowDimensions] = useState(
+        getWindowDimensions()
     );
+
+    useEffect(() => {
+        function handleResize() {
+            setWindowDimensions(getWindowDimensions());
+        }
+
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    return windowDimensions;
+}
+
+function getVisibleLineIndices(
+    fragments,
+    lineNumber,
+    numberOflines,
+    desiredNumberOfLines
+) {
+    const startIndex = Math.max(
+        0,
+        Math.min(
+            fragments[fragments.length - 1].endingLineNumber -
+                desiredNumberOfLines,
+            lineNumber -
+                Math.floor(desiredNumberOfLines / 2) -
+                fragments[0].startingLineNumber
+        )
+    );
+    const endIndex = Math.min(
+        numberOflines,
+        Math.max(
+            desiredNumberOfLines,
+            lineNumber +
+                Math.ceil(desiredNumberOfLines / 2) -
+                fragments[0].startingLineNumber
+        )
+    );
+
+    return [startIndex, endIndex];
 }
 
 function formatLineNumber(fragment) {

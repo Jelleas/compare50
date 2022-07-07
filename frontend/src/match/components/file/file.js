@@ -127,14 +127,12 @@ function Fragment({
 
     const codeSnippets = lines.map((line, lineIndex) => {
         const optionalProps = {};
+        const lineNumber = fragment.startingLineNumber + lineIndex;
 
         // If the code is on a newline, show line number and alert
         if (isOnNewline || lineIndex > 0) {
-            const lineNumber = fragment.startingLineNumber + lineIndex;
-
-            optionalProps["lineNumber"] = lineNumber
-                .toString()
-                .padStart(fragment.numberOfLinesInFile.toString().length, " ");
+            optionalProps["isOnNewLine"] = true;
+            optionalProps["lineNumber"] = lineNumber;
             optionalProps["alertLevel"] = alertLevel;
             optionalProps["explanationRegion"] = fragment;
         }
@@ -149,6 +147,7 @@ function Fragment({
             <CodeSnippet
                 key={`code_${id}_${lineIndex}`}
                 line={line}
+                fragment={fragment}
                 {...optionalProps}
             ></CodeSnippet>
         );
@@ -202,7 +201,14 @@ function Fragment({
     );
 }
 
-function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
+function CodeSnippet({
+    line,
+    lineNumber,
+    fragment,
+    isOnNewLine,
+    alertLevel,
+    explanationRegion,
+}) {
     const [settings] = useContext(SettingsContext);
 
     const getToolTipProps = useContext(ExplanationTooltipContext);
@@ -212,7 +218,7 @@ function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
         line = replaceLeadingWhitespace(line);
     }
 
-    if (lineNumber == null && alertLevel == null) {
+    if (!isOnNewLine && alertLevel == null) {
         return <code>{line}</code>;
     }
 
@@ -221,7 +227,7 @@ function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
     let alertText = "";
 
     // If color blindness mode is off, reserve space in sidebar for alerts
-    if (lineNumber != null) {
+    if (isOnNewLine) {
         if (settings.isColorBlind) {
             alertText = "   ";
         } else {
@@ -255,11 +261,15 @@ function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
         }
         optionalProps = {
             ...optionalProps,
-            ...getToolTipProps(explanationRegion),
+            ...getToolTipProps(explanationRegion, lineNumber),
         };
     }
 
-    const lineNumberText = lineNumber == null ? "" : ` ${lineNumber} `;
+    const lineNumberText = isOnNewLine
+        ? ` ${lineNumber
+              .toString()
+              .padStart(fragment.numberOfLinesInFile.toString().length, " ")} `
+        : "";
 
     return (
         <>
@@ -274,6 +284,7 @@ function CodeSnippet({ line, lineNumber, alertLevel, explanationRegion }) {
 CodeSnippet.defaultProps = {
     lineNumber: null,
     alertLevel: null,
+    isOnNewLine: false,
     explanationRegion: null,
 };
 
