@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import "react-virtualized/styles.css";
 import { List, CellMeasurer, CellMeasurerCache } from "react-virtualized";
 
@@ -7,10 +7,13 @@ import { SettingsContext } from "../../hooks/useSettings";
 import { replaceLeadingWhitespace } from "../file/file";
 
 function ExplanationsView({ explanations, file, similarities, lineNumber }) {
+    const windowDimensions = useWindowDimensions();
+
     const explanation = explanations[0];
 
     const spans = explanation.explanations.map((exp) => exp.span);
 
+    // Find the entire region of this explanation
     const encompassingRegion = spans.reduce((span, region) => {
         return {
             start: Math.min(span.start, region.start),
@@ -19,12 +22,14 @@ function ExplanationsView({ explanations, file, similarities, lineNumber }) {
         };
     }, spans[0]);
 
+    // Get all ignored spans that overlap with the region of this explanation
     const overlaps = (region, otherRegion) =>
         !(region.end < otherRegion.start || region.start > otherRegion.end);
     const ignoredSpans = similarities.ignoredSpans
         .filter((span) => span.fileId === file.id)
         .filter((span) => overlaps(span, encompassingRegion));
 
+    // Find all regions of newlines, this will create a fragment for each newline
     const newLineRegions = getNewLineRegions(file, encompassingRegion);
 
     let fragments = useFragments(
@@ -33,6 +38,7 @@ function ExplanationsView({ explanations, file, similarities, lineNumber }) {
         newLineRegions.concat(ignoredSpans)
     );
 
+    // Filter any fragments that are not in the region of this explanation
     fragments = fragments.filter(
         (frag) =>
             frag.start >= encompassingRegion.start &&
@@ -67,40 +73,13 @@ function ExplanationsView({ explanations, file, similarities, lineNumber }) {
         fragmentsPerLine.pop();
     }
 
-    const lineElems = fragmentsPerLine.map((frags) => (
-        <Line
-            key={`line_${frags[0].start}_${frags[frags.length - 1].end}`}
-            fragments={frags}
-            explanationMap={fragToExp}
-            similarities={similarities}
-        />
-    ));
-
-    const [startIndex, endIndex] = getVisibleLineIndices(
-        fragments,
-        lineNumber,
-        lineElems.length,
-        15
-    );
-
-    // In this example, average cell width is assumed to be about 100px.
-    // This value will be used for the initial `Grid` layout.
-    // Cell measurements smaller than 75px should also be rounded up.
-    // Height is not dynamic.
     const cache = new CellMeasurerCache({
         defaultWidth: 15,
         minHeight: 15,
         fixedWidth: true,
     });
 
-    const rowRenderer = ({
-        key,
-        index,
-        parent,
-        isScrolling,
-        isVisible,
-        style,
-    }) => {
+    const rowRenderer = ({ key, index, parent, style }) => {
         const frags = fragmentsPerLine[index];
 
         const line = (
@@ -127,31 +106,20 @@ function ExplanationsView({ explanations, file, similarities, lineNumber }) {
         return line;
     };
 
-    const dimensions = useWindowDimensions();
-
-    const listRef = useRef();
-
-    useEffect(() => {
-        if (listRef.current != null) {
-            listRef.current.recomputeRowHeights();
-        }
-    });
-
     return (
         <div>
             <p>{explanation.leadingExplanation.text}</p>
             <Legenda />
             <pre className="softwrap">
                 <List
-                    ref={listRef}
                     width={550}
                     height={Math.min(
-                        dimensions.height - 300,
-                        lineElems.length * 15
+                        windowDimensions.height - 300,
+                        fragmentsPerLine.length * 15
                     )}
                     scrollToIndex={lineNumber - fragments[0].startingLineNumber}
                     scrollToAlignment={"center"}
-                    rowCount={lineElems.length}
+                    rowCount={fragmentsPerLine.length}
                     rowHeight={cache.rowHeight}
                     rowRenderer={rowRenderer}
                     deferredMeasurementCache={cache}
@@ -304,35 +272,6 @@ function useWindowDimensions() {
     }, []);
 
     return windowDimensions;
-}
-
-function getVisibleLineIndices(
-    fragments,
-    lineNumber,
-    numberOflines,
-    desiredNumberOfLines
-) {
-    const startIndex = Math.max(
-        0,
-        Math.min(
-            fragments[fragments.length - 1].endingLineNumber -
-                desiredNumberOfLines,
-            lineNumber -
-                Math.floor(desiredNumberOfLines / 2) -
-                fragments[0].startingLineNumber
-        )
-    );
-    const endIndex = Math.min(
-        numberOflines,
-        Math.max(
-            desiredNumberOfLines,
-            lineNumber +
-                Math.ceil(desiredNumberOfLines / 2) -
-                fragments[0].startingLineNumber
-        )
-    );
-
-    return [startIndex, endIndex];
 }
 
 function formatLineNumber(fragment) {
