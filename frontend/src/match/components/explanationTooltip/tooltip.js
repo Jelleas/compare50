@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect } from "react";
-// import ReactTooltip from "react-tooltip";
+import ReactTooltip from "react-tooltip";
 import "./tooltip.css";
-
-import ReactTooltip from "../../../../node_modules/react-tooltip/dist/index.js";
 
 import ExplanationsView from "./explanation";
 
