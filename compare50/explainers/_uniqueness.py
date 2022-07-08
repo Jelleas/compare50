@@ -1,7 +1,6 @@
-from __future__ import annotations
 
 from collections import defaultdict
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple
 import math
 
 from tokenize import Token
@@ -47,7 +46,7 @@ class Uniqueness(Explainer):
         index.ignore_all(ignored_index)
 
         # Find all fingerprints belonging to a span
-        span_to_fingerprints: Dict[Span, List[int, Span]] = get_span_to_fingerprints(results, index, file_to_tokens)
+        span_to_fingerprints: Dict[Span, List[Tuple[int, Span]]] = get_span_to_fingerprints(results, index, file_to_tokens)
 
         progress_bar.update(25)
 
@@ -91,7 +90,7 @@ def get_span_to_fingerprints(
     results: List[Compare50Result],
     index: CompareIndex,
     file_to_tokens: Dict[File, Token]
-) -> Dict[Span, List[int, Span]]:
+) -> Dict[Span, List[Tuple[int, Span]]]:
 
     span_to_fingerprints = defaultdict(list)
 

@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from typing import List, Set, Dict
 
@@ -98,7 +97,7 @@ class Explainer(metaclass=abc.ABCMeta):
         archive_submissions: List["Submission"], 
         ignored_files: Set["File"], 
         pass_: Pass
-    ) -> list["Explanation"]:
+    ) -> List["Explanation"]:
         pass
 
 
@@ -329,9 +328,9 @@ class Compare50Result:
     """
     pass_: Pass = attr.ib()
     score: Score = attr.ib()
-    groups: List[Group] = attr.ib()
+    groups: List["Group"] = attr.ib()
     ignored_spans: List[Span] = attr.ib()
-    explanations: Dict[Explainer, List[Explanation]] = attr.ib(init=False, factory=lambda: defaultdict(list))
+    explanations: Dict[Explainer, List["Explanation"]] = attr.ib(init=False, factory=lambda: defaultdict(list))
 
     @property
     def name(self):
@@ -348,7 +347,7 @@ class Compare50Result:
         """The 'second' (right) submission"""
         return self.score.sub_b
 
-    def add_explanation(self, explanation: Explanation):
+    def add_explanation(self, explanation: "Explanation"):
         """Add an explanation to this result."""
         self.explanations[explanation.explainer].append(explanation)
 

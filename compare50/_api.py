@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from typing import List, Set
 
@@ -20,13 +19,35 @@ class Error(Exception):
     pass
 
 
+def fingerprint(submissions: List[Submission],
+                pass_: Pass):
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.Submission`]
+    :param archive_submissions: archive submissions to be fingerprinted
+    :type archive_submissions: [:class:`compare50.Submission`]
+    :param ignored_files: files containing distro code
+    :type ignored_files: {:class:`compare50.File`}
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+    :param n: number of submission pairs to return
+    :type n: int
+    :returns: the top ``n`` submission pairs
+    :rtype: [:class:`compare50.Score`]
+
+
+    Fingerprint submissions
+    """
+    return pass_.comparator.fingerprint(submissions)
+
+
 def rank(
     submissions: List[Submission], 
     archive_submissions: List[Submission], 
     ignored_files: Set[File], 
     pass_: Pass, 
     n: int=50
-) -> list[Score]:
+) -> List[Score]:
     """
     :param submissions: submissions to be ranked
     :type submissions: [:class:`compare50.Submission`]
