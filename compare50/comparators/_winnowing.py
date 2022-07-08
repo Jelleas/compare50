@@ -4,11 +4,12 @@ import itertools
 import math
 import sys
 
+from typing import List, Tuple
+
 import attr
 import numpy as np
 
-
-from .. import _api, Comparison, Comparator, Submission, Span, Score
+from .. import _api, Comparison, Comparator, File, Submission, Span, Score, Fingerprint
 
 
 class Winnowing(Comparator):
@@ -65,7 +66,6 @@ class Winnowing(Comparator):
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])))
 
     def compare(self, scores, ignored_files):
-
         bar = _api.get_progress_bar()
         bar.reset(total=len(scores) if scores else 1)
         if not scores:
@@ -91,7 +91,6 @@ class Winnowing(Comparator):
             unignored_tokens = attr.ib(factory=list)
             ignored_spans = attr.ib(factory=list)
 
-
         file_cache = {}
         for sub in subs:
             for file in sub:
@@ -110,8 +109,6 @@ class Winnowing(Comparator):
                                                          original_tokens=file_tokens,
                                                          processed_tokens=list(itertools.chain.from_iterable(token_lists)))
                 file_cache[file] = cache
-
-
 
         comparisons = []
         for score in scores:
@@ -137,6 +134,14 @@ class Winnowing(Comparator):
 
         return comparisons
 
+    def fingerprint_for_compare(self, file: File) -> List[Fingerprint]:
+        return [Fingerprint(*fp) for fp in CompareIndex(self.k).fingerprint(file)]
+
+    def fingerprint_for_score(self, file: File) -> List[Fingerprint]:
+        prints = self.fingerprint_for_compare(file)
+        hash_to_print = {hash(p): p for p in prints}
+        hashes = ScoreIndex(self.k, self.t).winnow(hash_to_print)
+        return [hash_to_print[h] for h in hashes] 
 
     @attr.s(slots=True)
     class _index_file:
@@ -266,29 +271,33 @@ class ScoreIndex(Index):
             if not tokens:
                 return []
 
-        hashes = self.hashes(tokens)
+        hashes = self.winnow(self.hashes(tokens))
+        fingerprints = [(hash_, file.submission.id) for hash_ in hashes]
+        return fingerprints
 
-        fingerprints = []
+    def winnow(self, hashes):
+        winnowed_hashes = []
 
         # circular buffer holding window
-        buf = [(math.inf, Span(None, 0, 0))] * self.w
-        # index of minimum hash in buffer
+        buf = [math.inf] * self.w
         min_idx = 0
+        
         for hash_, idx in zip(hashes, itertools.cycle(range(self.w))):
-            buf[idx] = hash_, file.submission.id
+            buf[idx] = hash_
             if min_idx == idx:
                 # old min not in window, search left for new min
                 for j in range(1, self.w):
                     search_idx = (idx - j) % self.w
-                    if buf[search_idx][0] < buf[min_idx][0]:
+                    if buf[search_idx] < buf[min_idx]:
                         min_idx = search_idx
-                fingerprints.append(buf[min_idx])
+                winnowed_hashes.append(buf[min_idx])
             else:
                 # compare new hash to old min (robust winnowing)
-                if buf[idx][0] < buf[min_idx][0]:
+                if buf[idx] < buf[min_idx]:
                     min_idx = idx
-                    fingerprints.append(buf[min_idx])
-        return fingerprints
+                    winnowed_hashes.append(buf[min_idx])
+
+        return winnowed_hashes
 
 
 class CompareIndex(Index):

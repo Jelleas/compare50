@@ -14,8 +14,7 @@ import pygments.lexers
 
 
 __all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "Submission",
-           "Span", "Score", "Compare50Result", "Comparison", "Token"]
-
+           "Span", "Score", "Compare50Result", "Comparison", "Token", "Fingerprint"]
 
 class _PassRegistry(abc.ABCMeta):
     passes = {}
@@ -83,6 +82,13 @@ class Comparator(metaclass=abc.ABCMeta):
         """
         pass
 
+    @abc.abstractmethod
+    def fingerprint_for_score(self, file: "File") -> List["Fingerprint"]:
+        pass
+
+    @abc.abstractmethod
+    def fingerprint_for_compare(self, file: "File") -> List["Fingerprint"]:
+        pass
 
 class Explainer(metaclass=abc.ABCMeta):
     @property
@@ -133,6 +139,12 @@ def _to_path_tuple(fs):
     https://github.com/python-attrs/attrs/pull/404
     """
     return tuple(map(pathlib.Path, fs))
+
+
+@attr.s(slots=True, frozen=True)
+class Fingerprint:
+    value = attr.ib()
+    span = attr.ib(cmp=False, hash=False)
 
 
 @attr.s(slots=True, frozen=True)
