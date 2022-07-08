@@ -8,12 +8,12 @@ from .. import get_progress_bar
 class Index:
     def __init__(self, comparator: Comparator):
         self.comparator = comparator
-        self._index = defaultdict(set)
+        self._index = defaultdict(list)
 
     def include(self, submission: Submission) -> None:
         for f in submission.files:
             for fp in self.comparator.fingerprint_for_compare(f):
-                self._index[fp].add(fp)
+                self._index[fp].append(fp)
 
     def ignore(self, file: File) -> None:
         for fp in self.comparator.fingerprint_for_compare(file):
@@ -23,10 +23,10 @@ class Index:
         return len({fp.span.file.submission.id for fp in self._index[fingerprint]})
 
     def get_span_to_fingerprints(self, results: Compare50Result):
-        file_to_fingerprints = defaultdict(set)
+        file_to_fingerprints = defaultdict(list)
         for fingerprints in self._index.values():
             for fingerprint in fingerprints:
-                file_to_fingerprints[fingerprint.span.file].add(fingerprint)
+                file_to_fingerprints[fingerprint.span.file].append(fingerprint)
 
         # Get all spans that the comparator found matches for
         all_matched_spans = {span for result in results for group in result.groups for span in group.spans}
@@ -117,4 +117,4 @@ class Uniqueness(Explainer):
 def compute_idf(n_documents: int, total_n_documents: int) -> float:
     if n_documents == 0 or total_n_documents == 0:
         return 0
-    return math.log(total_n_documents / n_documents)
+    return 1 + math.log(total_n_documents / n_documents)
