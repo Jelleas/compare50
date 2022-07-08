@@ -2,9 +2,11 @@ import collections
 import contextlib
 import itertools
 
+from typing import List, Tuple
+
 import attr
 
-from .. import Comparator, Span, Comparison, Score
+from .. import Comparator, Span, File, Comparison, Score, Fingerprint
 
 
 class Misspellings(Comparator):
@@ -59,6 +61,12 @@ class Misspellings(Comparator):
             comparisons.append(Comparison(score.sub_a, score.sub_b,
                                           span_matches, list(ignored_spans)))
         return comparisons
+
+    def fingerprint_for_score(self, file: File) -> List[Fingerprint]:
+        return [Fingerprint(token.val, Span(file, token.start, token.end)) for token in file.tokens()]
+
+    def fingerprint_for_compare(self, file: File) -> List[Fingerprint]:
+        return self.fingerprint_for_score(file)
 
     def _spellcheck(self, file, ignored_words):
         word_to_spans = collections.defaultdict(list)

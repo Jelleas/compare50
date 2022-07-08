@@ -429,6 +429,7 @@ def main():
                     results = pass_to_results[pass_]
                     
                     explanations: List[Explanation] = explainer.explain(
+                        comparator=pass_.comparator,
                         results=results,
                         submissions=subs,
                         archive_submissions=archive_subs,
