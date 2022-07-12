@@ -8,7 +8,7 @@ import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, Pass, Span, Score, File, Group, BisectList, Compare50Result
+from ._data import Submission, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint
 
 
 __all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
@@ -19,26 +19,31 @@ class Error(Exception):
     pass
 
 
-def fingerprint(submissions: List[Submission],
-                pass_: Pass):
+def fingerprint_for_compare(submissions: List[Submission],
+                pass_: Pass) -> List[List[Fingerprint]]:
     """
     :param submissions: submissions to be fingerprinted
     :type submissions: [:class:`compare50.Submission`]
-    :param archive_submissions: archive submissions to be fingerprinted
-    :type archive_submissions: [:class:`compare50.Submission`]
-    :param ignored_files: files containing distro code
-    :type ignored_files: {:class:`compare50.File`}
     :param pass_: pass whose comparator should be use to fingerprint the submissions
     :type pass_: :class:`compare50.Pass`
-    :param n: number of submission pairs to return
-    :type n: int
-    :returns: the top ``n`` submission pairs
-    :rtype: [:class:`compare50.Score`]
-
+    :rtype: [:class:`compare50.Fingerprint`]
 
     Fingerprint submissions
     """
-    return pass_.comparator.fingerprint(submissions)
+    return [[pass_.comparator.fingerprint_for_compare(file) for file in submission.files] for submission in submissions]
+
+def fingerprint_for_score(submissions: List[Submission],
+                pass_: Pass) -> List[List[Fingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.Submission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+    :rtype: [:class:`compare50.Fingerprint`]
+
+    Fingerprint submissions
+    """
+    return [[pass_.comparator.fingerprint_for_score(file) for file in submission.files] for submission in submissions]
 
 
 def rank(

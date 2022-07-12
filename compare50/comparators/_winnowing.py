@@ -28,17 +28,6 @@ class Winnowing(Comparator):
         self.k = k
         self.t = t
 
-    def fingerprint(self, submissions: List[Submission]):
-        """fingerprints of k-grams."""
-        def files(subs):
-            return [f for sub in subs for f in sub]
-
-        submission_index = ScoreIndex(self.k, self.t)
-
-        submission_files = files(submissions)
-
-        return [submission_index.fingerprint(file) for file in submission_files]
-
 
     def score(self, submissions, archive_submissions, ignored_files):
         """Number of matching k-grams."""
