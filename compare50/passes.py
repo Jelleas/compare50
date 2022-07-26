@@ -9,7 +9,7 @@ __all__ = ["structure", "text", "exact", "nocomments", "misspellings"]
 class structure(Pass):
     """Compares code structure by removing whitespace and comments; normalizing variable names, string literals, and numeric literals; and then running the winnowing algorithm."""
     default = True
-    parallel = False
+    parallel = False # uniqueness explainer needs access to all tokens, best to disable concurrency to allow for caching
     preprocessors = [preprocessors.strip_whitespace,
                      preprocessors.strip_comments,
                      preprocessors.normalize_identifiers,
