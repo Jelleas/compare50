@@ -79,19 +79,26 @@ class Winnowing(Comparator):
         ignored_index = ScoreIndex(self.k, self.t)
 
         frequency_map = collections.Counter()
+        submitter_fingerprints = collections.defaultdict(set)
         with _api.Executor() as executor:
             for submission in submissions:
                 for fingerprint in submission.fingerprints:
                     submission_index.include_fingerprint(fingerprint)
-                    frequency_map[fingerprint] += 1
+                    submitter_fingerprints[submission.submitter].add(fingerprint)
+                    # frequency_map[fingerprint] += 1
 
             for archive_submission in archive:
                 for fingerprint in archive_submission.fingerprints:
                     archive_index.include_fingerprint(fingerprint)
-                    frequency_map[fingerprint] += 1
+                    submitter_fingerprints[submission.submitter].add(fingerprint)
+                    # frequency_map[fingerprint] += 1
             
             for fingerprint in ignored:
                 ignored_index.include_fingerprint(fingerprint)
+
+        for fingerprints in submitter_fingerprints.values():
+            for fingerprint in fingerprints:
+                frequency_map[fingerprint] += 1
 
         submission_index.ignore_all(ignored_index)
         archive_index.ignore_all(ignored_index)
