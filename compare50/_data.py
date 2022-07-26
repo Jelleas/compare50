@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Tuple, Type, Callable
 
 import abc
 from collections.abc import Mapping, Sequence
@@ -14,7 +14,28 @@ import pygments.lexers
 
 
 __all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "Submission",
-           "Span", "Score", "Compare50Result", "Comparison", "Token", "Fingerprint"]
+           "Span", "Score", "Compare50Result", "Comparison", "Token", "Fingerprint",
+           "clear_all_caches"]
+
+_caches: List[Tuple[Type, str, Callable]] = []
+
+def cached_class(*args):
+    """
+    Decorator for a class with caches (state). Use as follows:
+    @cached_class(("property_name", lambda: "callback_that_produces_initial_value"))
+    All caches can be cleared by calling `clear_caches()`
+    """
+    def decorator(cls):
+        _caches.extend([(cls, arg, clear_callback) for arg, clear_callback in args])
+        return cls
+    return decorator
+
+
+def clear_all_caches():
+    """Clear all caches of classes decorated by cached_class."""
+    for cls, arg, clear_callback in _caches:
+        setattr(cls, arg, clear_callback())
+
 
 class _PassRegistry(abc.ABCMeta):
     passes = {}
@@ -48,6 +69,9 @@ class Pass(metaclass=_PassRegistry):
 
     # Whether or not the pass should be enabled by default
     default = False
+
+    # Whether or not the pass should be run in parallel
+    parallel = True
 
     @abc.abstractmethod
     def preprocessors(self):
@@ -89,6 +113,21 @@ class Comparator(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def fingerprint_for_compare(self, file: "File") -> List["Fingerprint"]:
         pass
+
+
+class ServerComparator(Comparator):
+    """
+    An extended comparator that is capable of ranking FingerprintSubmissions.
+    In other words, submissions that are composed of fingerprints only and not directories and files.
+    """
+    def score_fingerprints(
+        self, 
+        submissions: List["FingerprintSubmission"], 
+        archive_submissions: List["FingerprintSubmission"],
+        ignored_submissions: List["FingerprintSubmission"]
+    ):
+        pass
+
 
 class Explainer(metaclass=abc.ABCMeta):
     @property
@@ -147,6 +186,9 @@ class Fingerprint:
     span = attr.ib(cmp=False, hash=False)
 
 
+@cached_class(
+    ("_store", lambda: IdStore(key=lambda sub: (sub.path, sub.files, sub.large_files, sub.undecodable_files)))
+)
 @attr.s(slots=True, frozen=True)
 class Submission:
     """
@@ -170,7 +212,6 @@ class Submission:
     is_archive = attr.ib(default=False, cmp=False)
     id = attr.ib(init=False)
 
-
     def __attrs_post_init__(self):
         object.__setattr__(self, "files", tuple(
             [File(pathlib.Path(path), self) for path in self.files]))
@@ -184,7 +225,11 @@ class Submission:
         """Retrieve submission corresponding to specified id"""
         return cls._store.objects[id]
 
-
+@cached_class(
+    ("_lexer_cache", dict),
+    ("_unprocessed_token_cache", dict),
+    ("_store", lambda: IdStore(key=lambda file: file.path))
+)
 @attr.s(slots=True, frozen=True)
 class File:
     """
@@ -196,7 +241,8 @@ class File:
 
     Represents a single file from a submission.
     """
-    _lexer_cache = {}
+    _lexer_cache: Dict[str, pygments.lexers.Lexer] = {}
+    _unprocessed_token_cache: Dict[int, List[Token]] = {}
     _store = IdStore(key=lambda file: file.path)
 
     name = attr.ib(converter=pathlib.Path, cmp=False)
@@ -204,20 +250,20 @@ class File:
     id = attr.ib(default=attr.Factory(lambda self: self._store[self], takes_self=True), init=False)
 
     @property
-    def path(self):
+    def path(self) -> pathlib.Path:
         """The full path of the file"""
         return self.submission.path / self.name
 
-    def read(self, size=-1):
+    def read(self, size: int=-1) -> str:
         """Open file, read ``size`` bytes from it, then close it."""
         with open(self.path) as f:
             return f.read(size)
 
-    def tokens(self):
+    def tokens(self) -> List[Token]:
         """Returns the prepocessed tokens of the file."""
         return list(self.submission.preprocessor(self.unprocessed_tokens()))
 
-    def lexer(self):
+    def lexer(self) -> pygments.lexers.Lexer:
         """Determine which Pygments lexer should be used."""
         ext = self.name.suffix
         try:
@@ -237,12 +283,16 @@ class File:
                 return pygments.lexers.special.TextLexer()
 
     @classmethod
-    def get(cls, id):
+    def get(cls, id: int) -> File:
         """Find File with given id."""
         return cls._store.objects[id]
 
-    def unprocessed_tokens(self):
+    def unprocessed_tokens(self) -> List[Token]:
         """Get the raw tokens of the file."""
+        tokens = self._unprocessed_token_cache.get(self.id)
+        if not (tokens is None):
+            return tokens
+
         text = self.read()
         lexer_tokens = self.lexer().get_tokens_unprocessed(text)
         tokens = []
@@ -257,6 +307,8 @@ class File:
         if prevToken:
             tokens.append(Token(start=prevToken[0], end=len(text),
                                 type=prevToken[1], val=prevToken[2]))
+
+        self._unprocessed_token_cache[self.id] = tokens
         return tokens
 
 
