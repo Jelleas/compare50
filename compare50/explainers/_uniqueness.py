@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List, Dict, Set, Tuple
 import math
 
-from .. import Comparator, Explainer, Explanation, Compare50Result, Span, Submission, File, Fingerprint
+from .. import Comparator, Explainer, Explanation, Compare50Result, Span, Submission, File, Fingerprint, SourcedFingerprint
 from .. import get_progress_bar
 
 class Index:

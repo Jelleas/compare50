@@ -10,7 +10,7 @@ from typing import List, Set
 import attr
 import numpy as np
 
-from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint
+from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint, SourcedFingerprint
 from .._data import Submission, SubmissionFingerprint
 
 
@@ -84,14 +84,12 @@ class Winnowing(Comparator):
                 for fingerprint in submission.fingerprints:
                     submission_index.include_fingerprint(fingerprint)
                     submitter_fingerprints[submission.submitter].add(fingerprint)
-                    # frequency_map[fingerprint] += 1
 
             for archive_submission in archive:
                 for fingerprint in archive_submission.fingerprints:
                     archive_index.include_fingerprint(fingerprint)
-                    submitter_fingerprints[submission.submitter].add(fingerprint)
-                    # frequency_map[fingerprint] += 1
-            
+                    submitter_fingerprints[archive_submission.submitter].add(fingerprint)
+
             for fingerprint in ignored:
                 ignored_index.include_fingerprint(fingerprint)
 
@@ -105,9 +103,8 @@ class Winnowing(Comparator):
         # Add submissions to archive (the Index we're going to compare against)
         archive_index.include_all(submission_index)
 
-        N = len(submissions) + len(archive)
+        N = len(submitter_fingerprints)
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])), store=SubmissionFingerprint)
-
 
     def compare(self, scores, ignored_files):
         bar = _api.get_progress_bar()
@@ -178,14 +175,11 @@ class Winnowing(Comparator):
 
         return comparisons
 
-    def fingerprint_for_compare(self, file: File) -> List[Fingerprint]:
-        return [Fingerprint(*fp) for fp in CompareIndex(self.k).fingerprint(file)]
+    def fingerprint_for_compare(self, file: File) -> List[SourcedFingerprint]:
+        return [SourcedFingerprint(*fp) for fp in CompareIndex(self.k).fingerprint(file)]
 
     def fingerprint_for_score(self, file: File) -> List[Fingerprint]:
-        prints = self.fingerprint_for_compare(file)
-        hash_to_print = {hash(p): p for p in prints}
-        hashes = ScoreIndex(self.k, self.t).winnow(hash_to_print)
-        return [hash_to_print[h] for h in hashes] 
+        return [Fingerprint(*fp) for fp in ScoreIndex(self.k, self.t).fingerprint(file)]
 
     @attr.s(slots=True)
     class _index_file:
@@ -224,8 +218,7 @@ class Index(abc.ABC):
 
     def include_fingerprint(self, fingerprint:Fingerprint):
         """Add a fingerprint to the index."""
-        # TODO: check whether span is always an submission id, or that we need another attrib.
-        self._index[fingerprint].add(fingerprint.span)
+        self._index[fingerprint].add(fingerprint.submission_id)
 
     def include_all(self, other):
         """Add all fingerprints from another index into this one."""
@@ -279,7 +272,7 @@ class ScoreIndex(Index):
 
     def include_fingerprint(self, fingerprint:Fingerprint):
         super().include_fingerprint(fingerprint)
-        self._max_id = max(self._max_id, fingerprint.span)
+        self._max_id = max(self._max_id, fingerprint.submission_id)
 
     def include_all(self, other):
         super().include_all(other)

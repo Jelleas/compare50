@@ -8,7 +8,7 @@ import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, SubmissionFingerprint, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint
+from ._data import Submission, SubmissionFingerprint, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint, SourcedFingerprint
 
 
 __all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
@@ -20,7 +20,7 @@ class Error(Exception):
 
 
 def fingerprint_for_compare(submissions: List[Submission],
-                pass_: Pass) -> List[List[Fingerprint]]:
+                pass_: Pass) -> List[List[SourcedFingerprint]]:
     """
     :param submissions: submissions to be fingerprinted
     :type submissions: [:class:`compare50.Submission`]

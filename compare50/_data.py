@@ -14,7 +14,7 @@ import pygments.lexers
 
 __all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "Submission",
            "Span", "Score", "Compare50Result", "Comparison", "Token", "Fingerprint",
-           "clear_all_caches"]
+           "SourcedFingerprint", "clear_all_caches"]
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
@@ -169,10 +169,6 @@ class IdStore(Mapping):
     def __len__(self):
         return len(self.objects)
 
-    def clear(self):
-        self.objects = []
-        self._ids = {}
-
 
 def _to_path_tuple(fs):
     """
@@ -186,8 +182,12 @@ def _to_path_tuple(fs):
 @attr.s(slots=True, frozen=True)
 class Fingerprint:
     value = attr.ib()
-    span = attr.ib(cmp=False, hash=False)
+    submission_id = attr.ib(cmp=False, hash=False)
 
+@attr.s(slots=True, frozen=True)
+class SourcedFingerprint:
+    value = attr.ib()
+    span = attr.ib(cmp=False, hash=False)
 
 @cached_class(
     ("_store", lambda: IdStore(key=lambda sub: (sub.path, sub.files, sub.large_files, sub.undecodable_files)))
@@ -227,14 +227,13 @@ class Submission:
     def get(cls, id):
         """Retrieve submission corresponding to specified id"""
         return cls._store.objects[id]
-    
-    @classmethod
-    def clear_store(cls):
-        """Reset the contents of the submission store.""" 
-        cls._store.clear()
+
 
 # TODO: sort out inheritance and a base submission class. 
 # So that type checking doesn't have to include both types of submission.
+@cached_class(
+    ("_store", lambda: IdStore(key=lambda sub: (sub.submitter, sub.version, sub.slug)))
+)
 @attr.s(slots=True, frozen=True)
 class SubmissionFingerprint:
     """
@@ -267,10 +266,6 @@ class SubmissionFingerprint:
         """Retrieve submission corresponding to specified id"""
         return cls._store.objects[id]
 
-    @classmethod
-    def clear_store(cls):
-        """Reset the contents of the submission store.""" 
-        cls._store.clear()
 
 @cached_class(
     ("_lexer_cache", dict),
