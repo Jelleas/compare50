@@ -5,12 +5,13 @@ import math
 import sys
 from typing import List
 
-from typing import List, Tuple
+from typing import List, Tuple, Set
 
 import attr
 import numpy as np
 
-from .. import _api, Comparison, Comparator, File, Submission, Span, Score, Fingerprint
+from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint
+from .._data import Submission, SubmissionFingerprint
 
 
 class Winnowing(Comparator):
@@ -66,6 +67,41 @@ class Winnowing(Comparator):
 
         N = len(submissions) + len(archive_submissions)
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])))
+
+    def score_fingerprints(self,
+        submissions: List[SubmissionFingerprint], 
+        archive: List[SubmissionFingerprint], 
+        ignored: Set[Fingerprint]
+    ) -> List[Score]:
+
+        submission_index = ScoreIndex(self.k, self.t)
+        archive_index = ScoreIndex(self.k, self.t)
+        ignored_index = ScoreIndex(self.k, self.t)
+
+        frequency_map = collections.Counter()
+        with _api.Executor() as executor:
+            for submission in submissions:
+                for fingerprint in submission.fingerprints:
+                    submission_index.include_fingerprint(fingerprint)
+                    frequency_map[fingerprint] += 1
+
+            for archive_submission in archive:
+                for fingerprint in archive_submission.fingerprints:
+                    archive_index.include_fingerprint(fingerprint)
+                    frequency_map[fingerprint] += 1
+            
+            for fingerprint in ignored:
+                ignored_index.include_fingerprint(fingerprint)
+
+        submission_index.ignore_all(ignored_index)
+        archive_index.ignore_all(ignored_index)
+
+        # Add submissions to archive (the Index we're going to compare against)
+        archive_index.include_all(submission_index)
+
+        N = len(submissions) + len(archive)
+        return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])), store=SubmissionFingerprint)
+
 
     def compare(self, scores, ignored_files):
         bar = _api.get_progress_bar()
@@ -180,6 +216,11 @@ class Index(abc.ABC):
         for hash, val in self.fingerprint(file, tokens):
             self._index[hash].add(val)
 
+    def include_fingerprint(self, fingerprint:Fingerprint):
+        """Add a fingerprint to the index."""
+        # TODO: check whether span is always an submission id, or that we need another attrib.
+        self._index[fingerprint].add(fingerprint.span)
+
     def include_all(self, other):
         """Add all fingerprints from another index into this one."""
         for hash, vals in other._index.items():
@@ -230,11 +271,15 @@ class ScoreIndex(Index):
         super().include(file, tokens)
         self._max_id = max(self._max_id, file.submission.id)
 
+    def include_fingerprint(self, fingerprint:Fingerprint):
+        super().include_fingerprint(fingerprint)
+        self._max_id = max(self._max_id, fingerprint.span)
+
     def include_all(self, other):
         super().include_all(other)
         self._max_id = max(self._max_id, other._max_id)
 
-    def compare(self, other, score=lambda _: 1):
+    def compare(self, other, score=lambda _: 1, store=Submission):
         # Keep a self.max_file_id by other.max_file_id matrix for counting score
         scores = np.zeros((self._max_id + 1, other._max_id + 1), dtype=np.float64)
 
@@ -254,6 +299,7 @@ class ScoreIndex(Index):
             index1 = self._index[hash_]
             # All file_ids associated with fingerprint in other
             index2 = other._index[hash_]
+
             if index1 and index2:
                 # Create the product of all file_ids from self and other
                 # https://stackoverflow.com/questions/28684492/numpy-equivalent-of-itertools-product
@@ -264,7 +310,7 @@ class ScoreIndex(Index):
                 scores[index[:, 0], index[:, 1]] += score(hash_)
 
         # Return only those Scores with a score > 0 from different submissions
-        return [Score(Submission.get(id1), Submission.get(id2), scores[id1][id2])
+        return [Score(store.get(id1), store.get(id2), scores[id1][id2])
                 for id1, id2 in zip(*np.where(np.triu(scores, 1) > 0))]
 
     def fingerprint(self, file, tokens=None):

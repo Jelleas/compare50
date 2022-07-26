@@ -130,6 +130,10 @@ class IdStore(Mapping):
     def __len__(self):
         return len(self.objects)
 
+    def clear(self):
+        self.objects = []
+        self._ids = {}
+
 
 def _to_path_tuple(fs):
     """
@@ -182,6 +186,50 @@ class Submission:
     def get(cls, id):
         """Retrieve submission corresponding to specified id"""
         return cls._store.objects[id]
+    
+    @classmethod
+    def clear_store(cls):
+        """Reset the contents of the submission store.""" 
+        cls._store.clear()
+
+# TODO: sort out inheritance and a base submission class. 
+# So that type checking doesn't have to include both types of submission.
+@attr.s(slots=True, frozen=True)
+class SubmissionFingerprint:
+    """
+    :ivar fingerprints: A set of fingerprints generated earlier for this submission.
+    :ivar id: integer that uniquely identifies this submission \
+            (submissions with the same path will always have the same id).
+
+    Represents a single submission. Submissions may either be single files or
+    directories containing many files.
+    """
+    _store = IdStore(key=lambda sub: (sub.submitter, sub.version, sub.slug))
+
+    submitter = attr.ib(cmp=False)
+    version = attr.ib(cmp=False)
+    slug = attr.ib(cmp=False)
+    fingerprints = attr.ib(cmp=False)
+    is_archive = attr.ib(default=False, cmp=False)
+    id = attr.ib(init=False)
+
+
+    def __attrs_post_init__(self):
+        object.__setattr__(self, "id", SubmissionFingerprint._store[self])
+        object.__setattr__(self, "fingerprints", [Fingerprint(fingerprint, self.id) for fingerprint in self.fingerprints])
+
+    def __iter__(self):
+        return iter(self.fingerprints)
+
+    @classmethod
+    def get(cls, id):
+        """Retrieve submission corresponding to specified id"""
+        return cls._store.objects[id]
+
+    @classmethod
+    def clear_store(cls):
+        """Reset the contents of the submission store.""" 
+        cls._store.clear()
 
 
 @attr.s(slots=True, frozen=True)
@@ -307,8 +355,8 @@ class Comparison:
 
     Represents an in-depth comparison of two submissions.
     """
-    sub_a = attr.ib(validator=attr.validators.instance_of(Submission))
-    sub_b = attr.ib(validator=attr.validators.instance_of(Submission))
+    sub_a = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)))
+    sub_b = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)))
     span_matches = attr.ib(factory=list)
     ignored_spans = attr.ib(factory=list)
 
@@ -323,8 +371,8 @@ class Score:
 
     A score representing the similarity of two submissions.
     """
-    sub_a = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
-    sub_b = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
+    sub_a = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)), cmp=False)
+    sub_b = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)), cmp=False)
     score = attr.ib(default=0, validator=attr.validators.instance_of(numbers.Number))
 
 

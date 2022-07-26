@@ -8,7 +8,7 @@ import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint
+from ._data import Submission, SubmissionFingerprint, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint
 
 
 __all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
@@ -71,6 +71,38 @@ def rank(
     Rank submissions, return the top ``n`` most similar pairs
     """
     scores = pass_.comparator.score(submissions, archive_submissions, ignored_files)
+ 
+    # Keep only top `n` submission matches
+    return heapq.nlargest(n, scores)
+
+
+def rank_fingerprints(
+    submissions: List[SubmissionFingerprint], 
+    archive: List[SubmissionFingerprint], 
+    ignored: Set[Fingerprint], 
+    pass_: Pass, 
+    n: int=50
+) -> List[Score]:
+    """
+    :param submission: submission to be ranked
+    :type submissions: [:class:`compare50.Fingerprint`]
+    :param archive: archive fingerprints to be used in ranking
+    :type archiv: [:class:`compare50.Fingerprint`]
+    :param ignored: fingerprints extracted from distro code
+    :type ignored: {:class:`compare50.Fingerprint`}
+    :param pass_: pass whose comparator should be use to rank the submissions
+    :type pass_: :class:`compare50.Pass`
+    :param n: number of submission pairs to return
+    :type n: int
+    :returns: the top ``n`` submission pairs
+    :rtype: [:class:`compare50.Score`]
+
+
+    Rank submissions, return the top ``n`` most similar pairs
+    """
+    scores = pass_.comparator.score_fingerprints(submissions, archive, ignored)
+
+    scores = [score for score in scores if score.sub_a.submitter != score.sub_b.submitter]
  
     # Keep only top `n` submission matches
     return heapq.nlargest(n, scores)
