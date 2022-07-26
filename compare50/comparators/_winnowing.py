@@ -5,7 +5,7 @@ import math
 import sys
 from typing import List
 
-from typing import List, Tuple, Set
+from typing import List, Set
 
 import attr
 import numpy as np
@@ -57,7 +57,6 @@ class Winnowing(Comparator):
             for idx in executor.map(self._index_file(ScoreIndex, (self.k, self.t)), ignored_files):
                 index.include_all(idx)
                 bar.update()
-
 
         submission_index.ignore_all(ignored_index)
         archive_index.ignore_all(ignored_index)
