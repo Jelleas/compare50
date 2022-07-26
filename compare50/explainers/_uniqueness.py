@@ -70,11 +70,13 @@ class Uniqueness(Explainer):
         
         # Create an index for all regular files
         index = Index(comparator)
-        for sub in submissions + archive_submissions:
+        all_submissions = submissions + archive_submissions
+        step = 40 / len(all_submissions)
+        for sub in all_submissions:
             index.include(sub)
-
-        progress_bar.update(40)
+            progress_bar.update(step)
         
+        # Ignore all ignored files
         for f in ignored_files:
             index.ignore(f)
         progress_bar.update(10)
