@@ -378,7 +378,7 @@ def main():
     else:
         profiler = contextlib.suppress
 
-    if args.debug:
+    if args.debug or any(not p.parallel for p in passes):
         _api.Executor = _api.FauxExecutor
 
     if args.output.exists():

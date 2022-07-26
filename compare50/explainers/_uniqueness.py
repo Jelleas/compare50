@@ -22,7 +22,7 @@ class Index:
     def get_n_submissions_with_fingerprint(self, fingerprint: Fingerprint) -> int:
         return len({fp.span.file.submission.id for fp in self._index[fingerprint]})
 
-    def get_span_to_fingerprints(self, results: Compare50Result):
+    def get_span_to_fingerprints(self, results: List[Compare50Result]) -> Dict[Span, List[Fingerprint]]:
         file_to_fingerprints = defaultdict(list)
         for fingerprints in self._index.values():
             for fingerprint in fingerprints:
