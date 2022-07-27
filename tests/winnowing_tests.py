@@ -25,7 +25,7 @@ class TestCompareIndexIgnoreTokens(TestCase):
         with open("foo.py", "w") as f:
             f.write(self.content)
 
-        self.file = data.Submission(".", ["foo.py"]).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"]).files[0]
 
     def test_no_ignore(self):
         tokens = list(self.file.tokens())
@@ -45,7 +45,7 @@ class TestCompareIndexIgnoreTokens(TestCase):
         ignore_content = self.content.split("\n")[0]
         with open("ignore.py", "w") as f:
             f.write(ignore_content)
-        ignored_file = data.Submission(".", ["ignore.py"]).files[0]
+        ignored_file = data.FileSubmission(".", ["ignore.py"]).files[0]
         ignored_index = winnowing.CompareIndex(k=2)
         ignored_index.include(ignored_file)
 

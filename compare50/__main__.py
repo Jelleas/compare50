@@ -19,7 +19,7 @@ from typing import Tuple, List, Set, Dict
 import lib50
 import termcolor
 
-from . import comparators, Compare50Result, Pass, Submission, File, Explanation, _api, _data, _renderer, __version__
+from . import comparators, Compare50Result, Pass, Submission, FileSubmission, File, Explanation, _api, _data, _renderer, __version__
 
 
 def excepthook(cls, exc, tb):
@@ -61,15 +61,15 @@ class SubmissionFactory:
         self.patterns = []
         self.submissions = {}
 
-    def include(self, pattern):
+    def include(self, pattern) -> None:
         pattern = lib50.config.TaggedValue(pattern, "include")
         self.patterns.append(pattern)
 
-    def exclude(self, pattern):
+    def exclude(self, pattern) -> None:
         pattern = lib50.config.TaggedValue(pattern, "exclude")
         self.patterns.append(pattern)
 
-    def _get(self, path, preprocessor, is_archive=False):
+    def _get(self, path, preprocessor, is_archive=False) -> FileSubmission:
         path = pathlib.Path(path)
 
         # Ask lib50 which file(s) in path should be included
@@ -89,16 +89,16 @@ class SubmissionFactory:
         # Filter out any large files (>self.max_file_size)
         small, large = partition(decodable, lambda fp: (path / fp).stat().st_size <= self.max_file_size)
 
-        return _data.Submission(path, sorted(small),
-                                large_files=sorted(large),
-                                undecodable_files=sorted(undecodable),
-                                preprocessor=preprocessor,
-                                is_archive=is_archive)
+        return FileSubmission(path, sorted(small),
+                              large_files=sorted(large),
+                              undecodable_files=sorted(undecodable),
+                              preprocessor=preprocessor,
+                              is_archive=is_archive)
 
-    def get_all(self, paths, preprocessor, is_archive=False):
+    def get_all(self, paths, preprocessor, is_archive=False) -> Set[FileSubmission]:
         """
-        For every path, and every preprocessor, generate a Submission containing that path/preprocessor.
-        Returns a list of lists of Submissions.
+        For every path, generate a Submission containing that path/preprocessor.
+        Returns a list of FileSubmissions.
         """
         subs = set()
         for sub_path in paths:
@@ -107,7 +107,7 @@ class SubmissionFactory:
         return subs
 
     @staticmethod
-    def _is_valid_utf8(file_path):
+    def _is_valid_utf8(file_path: pathlib.Path) -> bool:
         """
         Check if file_path is valid utf-8.
         f.read() is not performant since the entire file is read in before checking if it is valid utf8.
@@ -437,7 +437,7 @@ def main():
                     )
 
                     # Create a map from each submissions to its results
-                    sub_to_results: Dict[Submission, Compare50Result] = defaultdict(list)
+                    sub_to_results: Dict[FileSubmission, Compare50Result] = defaultdict(list)
                     for result in results:
                         sub_to_results[result.sub_a].append(result)
                         sub_to_results[result.sub_b].append(result)
@@ -455,7 +455,11 @@ def main():
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")
 
 
-def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> Tuple[List[Submission], List[Submission], List[Submission], Set[File]]:
+def load(
+    submission_factory: SubmissionFactory,
+    passes: List[Pass],
+    args
+) -> Tuple[List[FileSubmission], List[FileSubmission], List[FileSubmission], Set[File]]:
     # Set max file size in bytes
     submission_factory.max_file_size = args.max_file_size * 1024
 
@@ -464,9 +468,9 @@ def load(submission_factory: SubmissionFactory, passes: List[Pass], args) -> Tup
     # Collect all submissions, archive submissions and distro files
     total = len(args.submissions) + len(args.archive) + len(args.distro)
     with _api.progress_bar("Preparing", total=total, disable=args.debug) as bar:
-        subs = submission_factory.get_all(args.submissions, preprocessor)
-        archive_subs = submission_factory.get_all(args.archive, preprocessor, is_archive=True)
-        ignored_subs = submission_factory.get_all(args.distro, preprocessor)
+        subs = list(submission_factory.get_all(args.submissions, preprocessor))
+        archive_subs = list(submission_factory.get_all(args.archive, preprocessor, is_archive=True))
+        ignored_subs = list(submission_factory.get_all(args.distro, preprocessor))
         ignored_files = {f for sub in ignored_subs for f in sub.files}
 
     print_stats(subs, archive_subs, ignored_subs, ignored_files, verbose=bool(args.verbose))

@@ -8,7 +8,20 @@ import intervaltree
 import tqdm
 
 import concurrent.futures
-from ._data import Submission, SubmissionFingerprint, Pass, Span, Score, File, Group, BisectList, Compare50Result, Fingerprint, SourcedFingerprint
+from ._data import (
+    FileSubmission,
+    FingerprintSubmission,
+    Pass,
+    Span,
+    Score, 
+    File,
+    Group,
+    BisectList,
+    Compare50Result,
+    Fingerprint,
+    SourcedFingerprint,
+    ServerComparator
+)
 
 
 __all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
@@ -19,45 +32,60 @@ class Error(Exception):
     pass
 
 
-def fingerprint_for_compare(submissions: List[Submission],
-                pass_: Pass) -> List[List[SourcedFingerprint]]:
+def fingerprint_for_compare(
+    submissions: List[FileSubmission],
+    pass_: Pass
+) -> List[List[SourcedFingerprint]]:
     """
     :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.Submission`]
+    :type submissions: [:class:`compare50.FileSubmission`]
     :param pass_: pass whose comparator should be use to fingerprint the submissions
     :type pass_: :class:`compare50.Pass`
-    :rtype: [:class:`compare50.Fingerprint`]
+   
+    Fingerprint submissions
+    """
+    all_fingerprints: List[List[SourcedFingerprint]] = []
+    for submission in submissions:
+        fps: List[SourcedFingerprint] = []
+        for file in submission.files:
+            fps.extend(pass_.comparator.fingerprint_for_compare(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
+
+
+def fingerprint_for_score(
+    submissions: List[FileSubmission],
+    pass_: Pass
+) -> List[List[Fingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.FileSubmission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
 
     Fingerprint submissions
     """
-    return [[pass_.comparator.fingerprint_for_compare(file) for file in submission.files] for submission in submissions]
-
-def fingerprint_for_score(submissions: List[Submission],
-                pass_: Pass) -> List[List[Fingerprint]]:
-    """
-    :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.Submission`]
-    :param pass_: pass whose comparator should be use to fingerprint the submissions
-    :type pass_: :class:`compare50.Pass`
-    :rtype: [:class:`compare50.Fingerprint`]
-
-    Fingerprint submissions
-    """
-    return [[pass_.comparator.fingerprint_for_score(file) for file in submission.files] for submission in submissions]
+    all_fingerprints: List[List[Fingerprint]] = []
+    for submission in submissions:
+        fps: List[Fingerprint] = []
+        for file in submission.files:
+            fps.extend(pass_.comparator.fingerprint_for_score(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
 
 
 def rank(
-    submissions: List[Submission], 
-    archive_submissions: List[Submission], 
+    submissions: List[FileSubmission], 
+    archive_submissions: List[FileSubmission], 
     ignored_files: Set[File], 
     pass_: Pass, 
     n: int=50
 ) -> List[Score]:
     """
     :param submissions: submissions to be ranked
-    :type submissions: [:class:`compare50.Submission`]
+    :type submissions: [:class:`compare50.FileSubmission`]
     :param archive_submissions: archive submissions to be ranked
-    :type archive_submissions: [:class:`compare50.Submission`]
+    :type archive_submissions: [:class:`compare50.FileSubmission`]
     :param ignored_files: files containing distro code
     :type ignored_files: {:class:`compare50.File`}
     :param pass_: pass whose comparator should be use to rank the submissions
@@ -77,10 +105,10 @@ def rank(
 
 
 def rank_fingerprints(
-    submissions: List[SubmissionFingerprint], 
-    archive: List[SubmissionFingerprint], 
+    submissions: List[FingerprintSubmission], 
+    archive: List[FingerprintSubmission], 
     ignored: Set[Fingerprint], 
-    pass_: Pass, 
+    comparator: ServerComparator, 
     n: int=50
 ) -> List[Score]:
     """
@@ -90,8 +118,8 @@ def rank_fingerprints(
     :type archiv: [:class:`compare50.Fingerprint`]
     :param ignored: fingerprints extracted from distro code
     :type ignored: {:class:`compare50.Fingerprint`}
-    :param pass_: pass whose comparator should be use to rank the submissions
-    :type pass_: :class:`compare50.Pass`
+    :param comparator: server comparator to be used to rank the submissions
+    :type comparator: :class:`compare50.ServerComparator`
     :param n: number of submission pairs to return
     :type n: int
     :returns: the top ``n`` submission pairs
@@ -100,7 +128,7 @@ def rank_fingerprints(
 
     Rank submissions, return the top ``n`` most similar pairs
     """
-    scores = pass_.comparator.score_fingerprints(submissions, archive, ignored)
+    scores = comparator.score_fingerprints(submissions, archive, ignored)
 
     scores = [score for score in scores if score.sub_a.submitter != score.sub_b.submitter]
  

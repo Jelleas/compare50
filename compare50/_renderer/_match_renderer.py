@@ -5,10 +5,10 @@ from typing import List, Dict
 from ._renderer import STATIC, TEMPLATES
 from .._data import IdStore
 
-from .. import Submission, Compare50Result, File, Submission, Span, Compare50Result, Explanation
+from .. import FileSubmission, Compare50Result, File, Span, Compare50Result, Explanation
 from ._cluster import Cluster
 
-def render_match(sub_a: Submission, sub_b: Submission, results: List[Compare50Result], cluster: Cluster, metadata: Dict) -> str:
+def render_match(sub_a: FileSubmission, sub_b: FileSubmission, results: List[Compare50Result], cluster: Cluster, metadata: Dict) -> str:
     files_a = files_as_dict(sub_a)
     files_b = files_as_dict(sub_b)
 
@@ -45,7 +45,7 @@ def file_as_dict(file: File) -> Dict:
     }
 
 
-def files_as_dict(submission: Submission) -> Dict:
+def files_as_dict(submission: FileSubmission) -> Dict:
     return {
         "id": submission.id,
         "name": str(submission.path),

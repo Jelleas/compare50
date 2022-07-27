@@ -15,7 +15,7 @@ class TestRankSubmissions(unittest.TestCase):
 
 class TestGroupSpans(unittest.TestCase):
     def span(self, start):
-        file = data.Submission(".", ["bar/foo"]).files[0]
+        file = data.FileSubmission(".", ["bar/foo"]).files[0]
         return data.Span(file, start, start + 1)
 
     def test_single_spanmatches_single_group(self):
@@ -62,7 +62,7 @@ class TestGroupSpans(unittest.TestCase):
 
 class TestFlatten(unittest.TestCase):
     def span(self, start, end):
-        file = data.Submission(".", ["bar/foo"]).files[0]
+        file = data.FileSubmission(".", ["bar/foo"]).files[0]
         return data.Span(file, start, end)
 
     def test_flatten_spans_no_spans(self):
@@ -112,7 +112,7 @@ class TestMissingSpans(unittest.TestCase):
         with open("foo.py", "w") as f:
             f.write(self.content)
 
-        self.file = data.Submission(".", ["foo.py"]).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"]).files[0]
 
     def tearDown(self):
         self.working_directory.cleanup()
@@ -122,7 +122,7 @@ class TestMissingSpans(unittest.TestCase):
         return data.Span(self.file, start, end)
 
     def test_all_spans_missing(self):
-        self.file = data.Submission(".", ["foo.py"], preprocessor=lambda tokens : []).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"], preprocessor=lambda tokens : []).files[0]
         resulting_span = self.span(0, len(self.content))
         spans = api.missing_spans(self.file)
         self.assertEqual(spans, [resulting_span])
@@ -133,7 +133,7 @@ class TestMissingSpans(unittest.TestCase):
             missing_tokens.append(tokens[-1])
             return tokens[:-1]
 
-        self.file = data.Submission(".", ["foo.py"], preprocessor=preprocessor).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"], preprocessor=preprocessor).files[0]
         spans = api.missing_spans(self.file)
         resulting_span = self.span(missing_tokens[0].start, len(self.content))
         self.assertEqual(spans, [resulting_span])
@@ -144,7 +144,7 @@ class TestMissingSpans(unittest.TestCase):
             missing_tokens.append(tokens[0])
             return tokens[1:]
 
-        self.file = data.Submission(".", ["foo.py"], preprocessor=preprocessor).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"], preprocessor=preprocessor).files[0]
         spans = api.missing_spans(self.file)
         resulting_span = self.span(0, missing_tokens[0].end)
         self.assertEqual(spans, [resulting_span])
@@ -156,7 +156,7 @@ class TestMissingSpans(unittest.TestCase):
             missing_tokens.append(tokens[middle])
             return tokens[:middle] + tokens[middle + 1:]
 
-        self.file = data.Submission(".", ["foo.py"], preprocessor=preprocessor).files[0]
+        self.file = data.FileSubmission(".", ["foo.py"], preprocessor=preprocessor).files[0]
         spans = api.missing_spans(self.file)
         resulting_span = self.span(missing_tokens[0].start, missing_tokens[0].end)
         self.assertEqual(spans, [resulting_span])

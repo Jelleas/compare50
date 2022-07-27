@@ -12,9 +12,9 @@ import pygments
 import pygments.lexers
 
 
-__all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "Submission",
-           "Span", "Score", "Compare50Result", "Comparison", "Token", "Fingerprint",
-           "SourcedFingerprint", "clear_all_caches"]
+__all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "FileSubmission",
+           "FingerprintSubmission", "Submission", "Span", "Score", "Compare50Result", "Comparison",
+            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches"]
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
@@ -39,7 +39,7 @@ def clear_all_caches():
 
 
 class _PassRegistry(abc.ABCMeta):
-    passes = {}
+    passes: Dict[str, Type] = {}
 
     def __new__(mcls, name, bases, attrs):
         cls = abc.ABCMeta.__new__(mcls, name, bases, attrs)
@@ -74,15 +74,17 @@ class Pass(metaclass=_PassRegistry):
     # Whether or not the pass should be run in parallel
     parallel = True
 
+    @property
     @abc.abstractmethod
-    def preprocessors(self):
+    def preprocessors(self) -> List[Callable[[List["Token"]], List["Token"]]]:
+        pass
+    
+    @property
+    @abc.abstractmethod
+    def comparator(self) -> "Comparator":
         pass
 
-    @abc.abstractmethod
-    def comparator(self):
-        pass
-
-    explainers = []
+    explainers: List["Explainer"] = []
 
 
 class Comparator(metaclass=abc.ABCMeta):
@@ -112,7 +114,7 @@ class Comparator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def fingerprint_for_compare(self, file: "File") -> List["Fingerprint"]:
+    def fingerprint_for_compare(self, file: "File") -> List["SourcedFingerprint"]:
         pass
 
 
@@ -125,7 +127,7 @@ class ServerComparator(Comparator):
         self, 
         submissions: List["FingerprintSubmission"], 
         archive_submissions: List["FingerprintSubmission"],
-        ignored_submissions: List["FingerprintSubmission"]
+        ignored: Set["Fingerprint"]
     ):
         pass
 
@@ -140,8 +142,8 @@ class Explainer(metaclass=abc.ABCMeta):
     def explain(
         self, 
         results: List["Compare50Result"], 
-        submissions: List["Submission"], 
-        archive_submissions: List["Submission"], 
+        submissions: List["FileSubmission"], 
+        archive_submissions: List["FileSubmission"], 
         ignored_files: Set["File"], 
         pass_: Pass
     ) -> List["Explanation"]:
@@ -183,19 +185,40 @@ def _to_path_tuple(fs):
 
 @attr.s(slots=True, frozen=True)
 class Fingerprint:
+    """A comparable and hashable fingerprint."""
     value = attr.ib()
     submission_id = attr.ib(cmp=False, hash=False)
 
+
 @attr.s(slots=True, frozen=True)
 class SourcedFingerprint:
+    """A Fingerprint with a source (a Span)."""
     value = attr.ib()
     span = attr.ib(cmp=False, hash=False)
+
+
+class Submission(metaclass=abc.ABCMeta):
+    """Abstract base class for Submissions."""
+    @property
+    @abc.abstractmethod
+    def id(self):
+        pass   
+
+    @property
+    @abc.abstractmethod
+    def is_archive(self):
+        pass
+
+    @abc.abstractclassmethod
+    def get(cls, id):
+        pass
+
 
 @cached_class(
     ("_store", lambda: IdStore(key=lambda sub: (sub.path, sub.files, sub.large_files, sub.undecodable_files)))
 )
 @attr.s(slots=True, frozen=True)
-class Submission:
+class FileSubmission(Submission):
     """
     :ivar path: the file path of the submission
     :ivar files: list of :class:`compare50.File` objects contained in the submission
@@ -218,7 +241,7 @@ class Submission:
     def __attrs_post_init__(self):
         object.__setattr__(self, "files", tuple(
             [File(pathlib.Path(path), self) for path in self.files]))
-        object.__setattr__(self, "id", Submission._store[self])
+        object.__setattr__(self, "id", FileSubmission._store[self])
 
     def __iter__(self):
         return iter(self.files)
@@ -229,20 +252,17 @@ class Submission:
         return cls._store.objects[id]
 
 
-# TODO: sort out inheritance and a base submission class. 
-# So that type checking doesn't have to include both types of submission.
 @cached_class(
     ("_store", lambda: IdStore(key=lambda sub: (sub.submitter, sub.version, sub.slug)))
 )
 @attr.s(slots=True, frozen=True)
-class SubmissionFingerprint:
+class FingerprintSubmission(Submission):
     """
     :ivar fingerprints: A set of fingerprints generated earlier for this submission.
     :ivar id: integer that uniquely identifies this submission \
             (submissions with the same path will always have the same id).
 
-    Represents a single submission. Submissions may either be single files or
-    directories containing many files.
+    Represents a single submission consisting of only fingerprints. 
     """
     submitter = attr.ib(cmp=False)
     version = attr.ib(cmp=False)
@@ -251,9 +271,8 @@ class SubmissionFingerprint:
     is_archive = attr.ib(default=False, cmp=False)
     id = attr.ib(init=False)
 
-
     def __attrs_post_init__(self):
-        object.__setattr__(self, "id", SubmissionFingerprint._store[self])
+        object.__setattr__(self, "id", FingerprintSubmission._store[self])
         object.__setattr__(self, "fingerprints", [Fingerprint(fingerprint, self.id) for fingerprint in self.fingerprints])
 
     def __iter__(self):
@@ -263,7 +282,6 @@ class SubmissionFingerprint:
     def get(cls, id):
         """Retrieve submission corresponding to specified id"""
         return cls._store.objects[id]
-
 
 
 @cached_class(
@@ -282,6 +300,10 @@ class File:
 
     Represents a single file from a submission.
     """
+    _lexer_cache: Dict[str, "pygments.lexers.Lexer"]
+    _unprocessed_token_cache: Dict
+    _store: IdStore
+
     name = attr.ib(converter=pathlib.Path, cmp=False)
     submission = attr.ib(cmp=False)
     id = attr.ib(default=attr.Factory(lambda self: self._store[self], takes_self=True), init=False)
@@ -397,8 +419,8 @@ class Comparison:
 
     Represents an in-depth comparison of two submissions.
     """
-    sub_a = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)))
-    sub_b = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)))
+    sub_a = attr.ib(validator=attr.validators.instance_of(Submission))
+    sub_b = attr.ib(validator=attr.validators.instance_of(Submission))
     span_matches = attr.ib(factory=list)
     ignored_spans = attr.ib(factory=list)
 
@@ -413,10 +435,11 @@ class Score:
 
     A score representing the similarity of two submissions.
     """
-    sub_a = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)), cmp=False)
-    sub_b = attr.ib(validator=attr.validators.instance_of((Submission, SubmissionFingerprint)), cmp=False)
-    score = attr.ib(default=0, validator=attr.validators.instance_of(numbers.Number))
+    sub_a = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
+    sub_b = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
 
+    # Remove ignore once https://github.com/python/mypy/issues/3186 is fixed
+    score: numbers.Number = attr.ib(default=0, validator=attr.validators.instance_of(numbers.Number)) # type: ignore
 
 @attr.s(slots=True)
 class Compare50Result:

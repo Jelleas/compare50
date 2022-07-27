@@ -2,15 +2,15 @@ from collections import defaultdict
 from typing import List, Dict, Set, Tuple
 import math
 
-from .. import Comparator, Explainer, Explanation, Compare50Result, Span, Submission, File, Fingerprint, SourcedFingerprint
+from .. import Comparator, Explainer, Explanation, Compare50Result, Span, FileSubmission, File, Fingerprint, SourcedFingerprint
 from .. import get_progress_bar
 
 class Index:
     def __init__(self, comparator: Comparator):
         self.comparator = comparator
-        self._index = defaultdict(list)
+        self._index: Dict[SourcedFingerprint, List[SourcedFingerprint]] = defaultdict(list)
 
-    def include(self, submission: Submission) -> None:
+    def include(self, submission: FileSubmission) -> None:
         for f in submission.files:
             for fp in self.comparator.fingerprint_for_compare(f):
                 self._index[fp].append(fp)
@@ -19,7 +19,7 @@ class Index:
         for fp in self.comparator.fingerprint_for_compare(file):
             self._index.pop(fp, None)
 
-    def get_n_submissions_with_fingerprint(self, fingerprint: Fingerprint) -> int:
+    def get_n_submissions_with_fingerprint(self, fingerprint: SourcedFingerprint) -> int:
         return len({fp.span.file.submission.id for fp in self._index[fingerprint]})
 
     def get_span_to_fingerprints(self, results: List[Compare50Result]) -> Dict[Span, List[Fingerprint]]:
@@ -29,7 +29,7 @@ class Index:
                 file_to_fingerprints[fingerprint.span.file].append(fingerprint)
 
         # Get all spans that the comparator found matches for
-        all_matched_spans = {span for result in results for group in result.groups for span in group.spans}
+        all_matched_spans: Set[Span] = {span for result in results for group in result.groups for span in group.spans}
 
         # Create a map from files to their matched_spans
         file_to_matched_spans = defaultdict(list)
@@ -61,8 +61,8 @@ class Uniqueness(Explainer):
         self, 
         comparator: Comparator,
         results: List[Compare50Result], 
-        submissions: List[Submission], 
-        archive_submissions: List[Submission], 
+        submissions: List[FileSubmission], 
+        archive_submissions: List[FileSubmission], 
         ignored_files: Set[File]
     ) -> List[Explanation]:
         progress_bar = get_progress_bar()

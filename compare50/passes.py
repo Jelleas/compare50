@@ -1,7 +1,8 @@
 from pkg_resources import resource_filename
+from typing import List, Callable
 
 from . import comparators, preprocessors, explainers
-from ._data import Pass
+from ._data import Pass, Token
 
 __all__ = ["structure", "text", "exact", "nocomments", "misspellings"]
 
@@ -31,7 +32,7 @@ class text(Pass):
 class exact(Pass):
     """Removes nothing, not even whitespace, then uses the winnowing algorithm to compare submissions."""
     default = True
-    preprocessors = []
+    preprocessors: List[Callable[[List["Token"]], List["Token"]]] = []
     comparator = comparators.Winnowing(k=25, t=35)
 
 

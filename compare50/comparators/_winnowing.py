@@ -12,7 +12,7 @@ import attr
 import numpy as np
 
 from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint, SourcedFingerprint
-from .._data import Submission, SubmissionFingerprint
+from .._data import FileSubmission, FingerprintSubmission
 
 
 class Winnowing(Comparator):
@@ -69,8 +69,8 @@ class Winnowing(Comparator):
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])))
 
     def score_fingerprints(self,
-        submissions: List[SubmissionFingerprint], 
-        archive: List[SubmissionFingerprint], 
+        submissions: List[FingerprintSubmission], 
+        archive: List[FingerprintSubmission], 
         ignored: Set[Fingerprint]
     ) -> List[Score]:
 
@@ -105,7 +105,7 @@ class Winnowing(Comparator):
         archive_index.include_all(submission_index)
 
         N = len(submitter_fingerprints)
-        return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])), store=SubmissionFingerprint)
+        return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])), store=FingerprintSubmission)
 
     def compare(self, scores, ignored_files):
         bar = _api.get_progress_bar()
@@ -279,7 +279,7 @@ class ScoreIndex(Index):
         super().include_all(other)
         self._max_id = max(self._max_id, other._max_id)
 
-    def compare(self, other, score=lambda _: 1, store=Submission):
+    def compare(self, other, score=lambda _: 1, store=FileSubmission):
         # Keep a self.max_file_id by other.max_file_id matrix for counting score
         scores = np.zeros((self._max_id + 1, other._max_id + 1), dtype=np.float64)
 
