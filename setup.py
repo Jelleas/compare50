@@ -17,7 +17,7 @@ setup(
         "lib50>=2,<4",
         "numpy>=1.15,<2",
         "pygments>=2.2,<3",
-        "jinja2>=2.10,<3",
+        "jinja2>=3.1,<4",
         "termcolor>=1.1.0,<2",
         "tqdm>=4.32,<5",
         "pyfarmhash>=0.3.2,<1"
