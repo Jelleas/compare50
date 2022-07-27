@@ -70,16 +70,14 @@ def pass_as_dict(result: Compare50Result, span_id_store: IdStore, group_id_store
     groups = []
 
     for group in result.groups:
-        group_data = {
-            "id": group_id_store[group],
-            "spans": []
-        }
+        id = group_id_store[group]
+        grouped_span_ids: List[int] = []
 
         for span in group.spans:
-            group_data["spans"].append(span_id_store[span])
+            grouped_span_ids.append(span_id_store[span])
             spans.append(span_as_dict(span, span_id_store))
 
-        groups.append(group_data)
+        groups.append({"id": id, "spans": grouped_span_ids})
 
     for span in result.ignored_spans:
         spans.append(span_as_dict(span, span_id_store, ignored=True))

@@ -136,7 +136,7 @@ class ServerComparator(Comparator):
 class Explainer(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod
-    def name(self):
+    def name(self) -> str:
         pass
 
     @abc.abstractmethod
@@ -161,7 +161,7 @@ class IdStore(Mapping):
         self._key = key
         self._ids = {}
 
-    def __getitem__(self, obj):
+    def __getitem__(self, obj) -> int:
         key = self._key(obj)
         if key not in self._ids:
             self._ids[key] = len(self.objects)
