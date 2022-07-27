@@ -4,6 +4,7 @@ import itertools
 import math
 import sys
 from typing import List
+import farmhash
 
 from typing import List, Set
 
@@ -243,7 +244,7 @@ class Index(abc.ABC):
 
     def hashes(self, tokens):
         """Hash each contiguous sequence of k tokens in ``tokens``."""
-        return (hash("".join(kgram)) for kgram in self.kgrams(t.val for t in tokens))
+        return (farmhash.hash32withseed("".join(kgram), 50) for kgram in self.kgrams(t.val for t in tokens))
 
     @abc.abstractmethod
     def compare(self, other):
