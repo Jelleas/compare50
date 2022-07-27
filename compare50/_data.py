@@ -244,8 +244,6 @@ class SubmissionFingerprint:
     Represents a single submission. Submissions may either be single files or
     directories containing many files.
     """
-    _store = IdStore(key=lambda sub: (sub.submitter, sub.version, sub.slug))
-
     submitter = attr.ib(cmp=False)
     version = attr.ib(cmp=False)
     slug = attr.ib(cmp=False)
