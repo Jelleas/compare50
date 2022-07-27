@@ -5,7 +5,7 @@ setup(
     author_email="sysadmins@cs50.harvard.edu",
     classifiers=[
         "Intended Audience :: Education",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Education",
         "Topic :: Utilities"
     ],
@@ -27,7 +27,7 @@ setup(
     },
     keywords=["compare", "compare50"],
     name="compare50",
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     packages=find_packages(exclude=["tests"]),
     scripts=["bin/compare50"],
     url="https://github.com/cs50/compare50",
