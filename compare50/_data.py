@@ -22,10 +22,12 @@ def cached_class(*args):
     """
     Decorator for a class with caches (state). Use as follows:
     @cached_class(("property_name", lambda: "callback_that_produces_initial_value"))
-    All caches can be cleared by calling `clear_caches()`
+    All caches can be cleared by calling `clear_all_caches()`
     """
     def decorator(cls):
-        _caches.extend([(cls, arg, clear_callback) for arg, clear_callback in args])
+        for arg, clear_callback in args:
+            setattr(cls, arg, clear_callback())
+            _caches.append((cls, arg, clear_callback))
         return cls
     return decorator
 
@@ -205,8 +207,6 @@ class Submission:
     Represents a single submission. Submissions may either be single files or
     directories containing many files.
     """
-    _store = IdStore(key=lambda sub: (sub.path, sub.files, sub.large_files, sub.undecodable_files))
-
     path = attr.ib(converter=pathlib.Path, cmp=False)
     files = attr.ib(cmp=False)
     large_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
@@ -267,6 +267,7 @@ class SubmissionFingerprint:
         return cls._store.objects[id]
 
 
+
 @cached_class(
     ("_lexer_cache", dict),
     ("_unprocessed_token_cache", dict),
@@ -283,10 +284,6 @@ class File:
 
     Represents a single file from a submission.
     """
-    _lexer_cache: Dict[str, "pygments.lexers.Lexer"] = {}
-    _unprocessed_token_cache: Dict[int, List["Token"]] = {}
-    _store = IdStore(key=lambda file: file.path)
-
     name = attr.ib(converter=pathlib.Path, cmp=False)
     submission = attr.ib(cmp=False)
     id = attr.ib(default=attr.Factory(lambda self: self._store[self], takes_self=True), init=False)
