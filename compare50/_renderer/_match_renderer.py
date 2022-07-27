@@ -93,7 +93,7 @@ def pass_as_dict(result: Compare50Result, span_id_store: IdStore, group_id_store
     ]
 
     return {
-        "name": result.pass_.__name__,
+        "name": result.pass_.__name__, # type: ignore
         "docs": result.pass_.__doc__,
         "score": result.score.score,
         "spans": spans,

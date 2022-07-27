@@ -5,14 +5,14 @@ import pkg_resources
 STATIC = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "static"))
 TEMPLATES = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "templates"))
 
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from ._cluster import Cluster
 from .. import _api, Compare50Result, Pass
 from ._home_renderer import render_home
 from ._match_renderer import render_match
 
-def render(pass_to_results: Dict[Pass, List[Compare50Result]], dest: str) -> pathlib.Path:
+def render(pass_to_results: Dict[Pass, List[Compare50Result]], dest: Union[str, pathlib.Path]) -> pathlib.Path:
     dest = pathlib.Path(dest)
 
     # Map each match to its results

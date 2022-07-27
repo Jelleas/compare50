@@ -6,6 +6,7 @@ import sys
 from typing import List
 import farmhash
 
+import typing
 from typing import List, Set
 
 import attr
@@ -78,7 +79,7 @@ class Winnowing(Comparator):
         archive_index = ScoreIndex(self.k, self.t)
         ignored_index = ScoreIndex(self.k, self.t)
 
-        frequency_map = collections.Counter()
+        frequency_map: typing.Counter[SourcedFingerprint] = collections.Counter()
         submitter_fingerprints = collections.defaultdict(set)
         with _api.Executor() as executor:
             for submission in submissions:

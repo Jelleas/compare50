@@ -19,7 +19,7 @@ from typing import Tuple, List, Set, Dict
 import lib50
 import termcolor
 
-from . import comparators, Compare50Result, Pass, Submission, FileSubmission, File, Explanation, _api, _data, _renderer, __version__
+from . import comparators, Compare50Result, Pass, Submission, FileSubmission, File, Explanation, _api, _data, _renderer, __version__ # type: ignore
 
 
 def excepthook(cls, exc, tb):
@@ -43,7 +43,7 @@ def excepthook(cls, exc, tb):
 
 
 # Assume we should print tracebacks until we get command line arguments
-excepthook.verbose = True
+excepthook.verbose = True # type: ignore
 sys.excepthook = excepthook
 
 

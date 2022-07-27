@@ -1,5 +1,6 @@
 
-from typing import List, Set, Dict, Tuple, Type, Callable
+import typing
+from typing import List, Set, Dict, Tuple, Type, Callable, Union
 
 import abc
 from collections.abc import Mapping, Sequence
@@ -81,7 +82,7 @@ class Pass(metaclass=_PassRegistry):
     
     @property
     @abc.abstractmethod
-    def comparator(self) -> "Comparator":
+    def comparator(self) -> Union["Comparator", "ServerComparator"]:
         pass
 
     explainers: List["Explainer"] = []
@@ -141,11 +142,11 @@ class Explainer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def explain(
         self, 
+        comparator: Comparator,
         results: List["Compare50Result"], 
         submissions: List["FileSubmission"], 
         archive_submissions: List["FileSubmission"], 
-        ignored_files: Set["File"], 
-        pass_: Pass
+        ignored_files: Set["File"]
     ) -> List["Explanation"]:
         pass
 
@@ -509,8 +510,8 @@ class Group:
 
     A group of spans with matching contents
     """
-    spans = attr.ib(converter=frozenset)
-    _subs = attr.ib(init=False, default=attr.Factory(_sorted_subs, takes_self=True))
+    spans: typing.FrozenSet[Span] = attr.ib(converter=frozenset)
+    _subs: List[Submission] = attr.ib(init=False, default=attr.Factory(_sorted_subs, takes_self=True))
 
     @property
     def sub_a(self):

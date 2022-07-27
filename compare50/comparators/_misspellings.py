@@ -63,10 +63,10 @@ class Misspellings(Comparator):
         return comparisons
 
     def fingerprint_for_score(self, file: File) -> List[Fingerprint]:
-        return [Fingerprint(token.val, file.id) for token in file.tokens()]
+        return [Fingerprint(token.val, file.submission.id) for token in file.tokens()]
 
     def fingerprint_for_compare(self, file: File) -> List[SourcedFingerprint]:
-        return [Fingerprint(token.val, Span(file, token.start, token.end)) for token in file.tokens()]
+        return [SourcedFingerprint(token.val, Span(file, token.start, token.end)) for token in file.tokens()]
 
     def _spellcheck(self, file, ignored_words):
         word_to_spans = collections.defaultdict(list)
