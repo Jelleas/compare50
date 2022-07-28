@@ -1,4 +1,5 @@
 import re
+from tracemalloc import start
 
 import attr
 from pygments.token import Comment, Name, Number, String, Text, Keyword
@@ -12,8 +13,7 @@ def strip_whitespace(tokens):
         if tok.type in Text:
             val = "".join(tok.val.split())
         if val:
-            tok = attr.evolve(tok, val=val)
-            yield tok
+            yield attr.evolve(tok, val=val)
 
 
 def normalize_builtin_types(tokens):
@@ -34,8 +34,7 @@ def strip_comments(tokens):
 def normalize_case(tokens):
     """Make all tokens lower case."""
     for tok in tokens:
-        tok = attr.evolve(tok, val=tok.val.lower())
-        yield tok
+        yield attr.evolve(tok, val=tok.val.lower())
 
 
 def normalize_identifiers(tokens):
@@ -54,7 +53,7 @@ def normalize_string_literals(tokens):
             if string_token is None:
                 string_token = attr.evolve(tok, val='""')
             elif tok.type == string_token.type:
-                string_token.end = tok.end
+                string_token = attr.evolve(string_token, end=tok.end)
             else:
                 yield string_token
                 string_token = attr.evolve(tok, val='""')
@@ -69,14 +68,11 @@ def normalize_numeric_literals(tokens):
     """Replace numeric literals with their types."""
     for tok in tokens:
         if tok.type in Number.Integer:
-            tok = attr.evolve(tok, val="INT")
-            yield tok
+            yield attr.evolve(tok, val="INT")
         elif tok.type in Number.Float:
-            tok = attr.evolve(tok, val="FLOAT")
-            yield tok
+            yield attr.evolve(tok, val="FLOAT")
         elif tok.type in Number:
-            tok = attr.evolve(tok, val="NUM")
-            yield tok
+            yield attr.evolve(tok, val="NUM")
         else:
             yield tok
 
@@ -92,10 +88,13 @@ def by_character(tokens):
     """Make a token for each character."""
     for tok in tokens:
         for i, c in enumerate(tok.val):
-            yield Token(start=tok.start + i,
-                        end=tok.start + i + 1,
-                        type=Text,
-                        val=c)
+            yield attr.evolve(
+                tok,
+                start=tok.start + i,
+                end=tok.start + i + 1,
+                type=Text,
+                val=c
+            )
 
 
 def token_printer(tokens):
@@ -125,12 +124,21 @@ def words(tokens):
         start = t.start
         only_alpha = re.sub("[^a-zA-Z'_-]", " ", t.val)
         for val, (start, end) in ((m.group(0), (m.start(), m.end())) for m in re.finditer(r'\S+', only_alpha)):
-            yield Token(t.start + start, t.start + end, t.type, val)
-
+            yield attr.evolve(
+                t,
+                start=t.start + start,
+                end=t.start + end,
+                val=val
+            )
 
 def split_on_whitespace(tokens):
     """Split values of tokens on whitespace into new tokens"""
     for t in tokens:
         start = t.start
         for val, (start, end) in ((m.group(0), (m.start(), m.end())) for m in re.finditer(r'\S+', t.val)):
-            yield Token(t.start + start, t.start + end, t.type, val)
+            yield attr.evolve(
+                t,
+                start=t.start + start, 
+                end=t.start + end, 
+                val=val
+            )
