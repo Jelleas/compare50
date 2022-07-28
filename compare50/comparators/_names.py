@@ -8,13 +8,15 @@ from .. import (
     File,
     Span,
     Fingerprint,
-    SourcedFingerprint
+    SourcedFingerprint,
+    progress_bar
 )
 
 from typing import List, Set, Dict, Tuple
 
 import collections
 import itertools
+import math
 
 import attr
 import farmhash
@@ -32,15 +34,25 @@ class Names(Comparator):
         pass
 
     def score(self, submissions, archive_submissions, ignored_files):
-        idStore = IdStore()
-        scores: List[Score] = []
+        bar = progress_bar()
+        bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
 
-        for sub_a, sub_b in itertools.product(submissions, submissions + archive_submissions):
-            if sub_a == sub_b:
-                continue
-            points = len(self._get_matching_names(sub_a, sub_b, idStore))
+        idStore = IdStore()
+        sub_to_prints: Dict[FileSubmission, Dict[IdentifiableToken, List[int]]] = {}
+        for sub in submissions + archive_submissions:
+            sub_to_prints[sub] = self._get_name_to_prints(sub, idStore)
+            bar.update()
+
+        scores: List[Score] = []
+        for sub_a, sub_b in itertools.combinations(submissions, r=2):
+            points = len(self._get_matching_names(sub_to_prints[sub_a], sub_to_prints[sub_b]))
             scores.append(Score(sub_a, sub_b, points))
         
+        for archive_sub in archive_submissions:
+            for sub in submissions:
+                points = len(self._get_matching_names(sub_to_prints[sub], sub_to_prints[archive_sub]))
+                scores.append(Score(sub, archive_sub, points))
+
         return scores
 
     def compare(self, scores, ignored_files):
@@ -48,7 +60,9 @@ class Names(Comparator):
         comparisons: List[Comparison] = []
 
         for score in scores:
-            matching_names = self._get_matching_names(score.sub_a, score.sub_b, idStore)
+            name_to_prints_a = self._get_name_to_prints(score.sub_a, idStore)
+            name_to_prints_b = self._get_name_to_prints(score.sub_b, idStore)
+            matching_names = self._get_matching_names(name_to_prints_a, name_to_prints_b)
 
             span_matches: List[Span] = []
             for var_a, var_b in matching_names:
@@ -58,8 +72,8 @@ class Names(Comparator):
                 ))
             
             comparisons.append(Comparison(
-                var_a.file.submission, 
-                var_b.file.submission,
+                score.sub_a, 
+                score.sub_b,
                 span_matches,
                 []
             ))
@@ -82,12 +96,9 @@ class Names(Comparator):
     
     def _get_matching_names(
         self,
-        sub_a: FileSubmission,
-        sub_b: FileSubmission,
-        idStore: IdStore
+        name_to_prints_a: FileSubmission,
+        name_to_prints_b: Dict[IdentifiableToken, List[int]]
     ) -> List[Tuple[IdentifiableToken, IdentifiableToken]]:
-        name_to_prints_a = self._get_name_to_prints(sub_a, idStore)
-        name_to_prints_b = self._get_name_to_prints(sub_b, idStore)
 
         matching_names: List[Tuple[IdentifiableToken, IdentifiableToken]] = []
 
