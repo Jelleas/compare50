@@ -1,10 +1,7 @@
 import re
-from tracemalloc import start
 
 import attr
 from pygments.token import Comment, Name, Number, String, Text, Keyword
-
-from ._data import Token
 
 def strip_whitespace(tokens):
     """Remove all whitespace from tokens."""
@@ -130,6 +127,7 @@ def words(tokens):
                 end=t.start + end,
                 val=val
             )
+
 
 def split_on_whitespace(tokens):
     """Split values of tokens on whitespace into new tokens"""

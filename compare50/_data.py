@@ -15,7 +15,7 @@ import pygments.lexers
 
 __all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "FileSubmission",
            "FingerprintSubmission", "Submission", "Span", "Score", "Compare50Result", "Comparison",
-            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches"]
+            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore"]
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
@@ -232,7 +232,7 @@ class FileSubmission(Submission):
     directories containing many files.
     """
     path = attr.ib(converter=pathlib.Path, cmp=False)
-    files = attr.ib(cmp=False)
+    files: List["File"] = attr.ib(cmp=False)
     large_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
     undecodable_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
     preprocessor = attr.ib(default=lambda tokens: tokens, cmp=False, repr=False)
@@ -526,7 +526,7 @@ class Group:
         return self._subs[1]
 
 
-@attr.s(slots=True)
+@attr.s(slots=True, frozen=True)
 class Token:
     """
     :ivar start: the character index of the beginning of the token

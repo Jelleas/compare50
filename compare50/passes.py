@@ -18,7 +18,7 @@ class structure(Pass):
                      preprocessors.normalize_string_literals,
                      preprocessors.normalize_numeric_literals]
     comparator = comparators.Winnowing(k=25, t=35)
-    explainers = [explainers.Uniqueness()]
+    explainers = [explainers.Uniqueness(), explainers.Names()]
 
 
 class text(Pass):
