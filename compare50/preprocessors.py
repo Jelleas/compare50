@@ -5,7 +5,6 @@ from pygments.token import Comment, Name, Number, String, Text, Keyword
 
 from ._data import Token
 
-
 def strip_whitespace(tokens):
     """Remove all whitespace from tokens."""
     for tok in tokens:
@@ -13,7 +12,7 @@ def strip_whitespace(tokens):
         if tok.type in Text:
             val = "".join(tok.val.split())
         if val:
-            tok.val = val
+            tok = attr.evolve(tok, val=val)
             yield tok
 
 
@@ -21,7 +20,7 @@ def normalize_builtin_types(tokens):
     """Normalize builtin type names"""
     for tok in tokens:
         if tok.type in Keyword.Type:
-            tok.val = "t"
+            tok = attr.evolve(tok, val="t")
         yield tok
 
 
@@ -35,7 +34,7 @@ def strip_comments(tokens):
 def normalize_case(tokens):
     """Make all tokens lower case."""
     for tok in tokens:
-        tok.val = tok.val.lower()
+        tok = attr.evolve(tok, val=tok.val.lower())
         yield tok
 
 
@@ -43,7 +42,7 @@ def normalize_identifiers(tokens):
     """Replace all identifiers with ``v``"""
     for tok in tokens:
         if tok.type in Name:
-            tok.val = "v"
+            tok = attr.evolve(tok, val="v")
         yield tok
 
 
@@ -70,13 +69,13 @@ def normalize_numeric_literals(tokens):
     """Replace numeric literals with their types."""
     for tok in tokens:
         if tok.type in Number.Integer:
-            tok.val = "INT"
+            tok = attr.evolve(tok, val="INT")
             yield tok
         elif tok.type in Number.Float:
-            tok.val = "FLOAT"
+            tok = attr.evolve(tok, val="FLOAT")
             yield tok
         elif tok.type in Number:
-            tok.val = "NUM"
+            tok = attr.evolve(tok, val="NUM")
             yield tok
         else:
             yield tok
