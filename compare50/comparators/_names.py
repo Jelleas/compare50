@@ -96,7 +96,7 @@ class Names(Comparator):
     
     def _get_matching_names(
         self,
-        name_to_prints_a: FileSubmission,
+        name_to_prints_a: Dict[IdentifiableToken, List[int]],
         name_to_prints_b: Dict[IdentifiableToken, List[int]]
     ) -> List[Tuple[IdentifiableToken, IdentifiableToken]]:
 
