@@ -386,7 +386,7 @@ class Preprocessor:
 @attr.s(slots=True, frozen=True, repr=False)
 class Span:
     """
-    :ivar file: the ID of the File containing the span
+    :ivar file: the file containing the span
     :ivar start: the character index of the first character in the span
     :ivar end: the character index one past the end of the span
 

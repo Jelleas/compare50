@@ -18,7 +18,7 @@ class structure(Pass):
                      preprocessors.normalize_string_literals,
                      preprocessors.normalize_numeric_literals]
     comparator = comparators.Winnowing(k=25, t=35)
-    explainers = [explainers.Uniqueness(), explainers.Names()]
+    explainers = [explainers.Uniqueness()]
 
 
 class text(Pass):
@@ -34,6 +34,18 @@ class exact(Pass):
     default = True
     preprocessors: List[Callable[[List["Token"]], List["Token"]]] = []
     comparator = comparators.Winnowing(k=25, t=35)
+
+
+class names(Pass):
+    """Compares names for similar usage."""
+    default = True
+    preprocessors = [preprocessors.strip_whitespace,
+                     preprocessors.strip_comments,
+                     preprocessors.normalize_identifiers,
+                     preprocessors.normalize_builtin_types,
+                     preprocessors.normalize_string_literals,
+                     preprocessors.normalize_numeric_literals]
+    comparator = comparators.Names()
 
 
 class nocomments(Pass):

@@ -159,7 +159,6 @@ def compare(
     missing_spans_cache = {}
     sub_match_to_ignored_spans = {}
     sub_match_to_groups = {}
-
     for comparison in pass_.comparator.compare(scores, ignored_files):
         new_ignored_spans = []
         for sub in (comparison.sub_a, comparison.sub_b):
