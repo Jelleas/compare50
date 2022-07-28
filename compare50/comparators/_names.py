@@ -89,7 +89,7 @@ class Names(Comparator):
         name_to_prints_a = self._get_name_to_prints(sub_a, idStore)
         name_to_prints_b = self._get_name_to_prints(sub_b, idStore)
 
-        matching_names: list[Tuple[IdentifiableToken, IdentifiableToken]] = []
+        matching_names: List[Tuple[IdentifiableToken, IdentifiableToken]] = []
 
         for (name_a, prints_a), (name_b, prints_b) in itertools.product(name_to_prints_a.items(), name_to_prints_b.items()):
             if prints_a == prints_b:
@@ -113,9 +113,9 @@ class Names(Comparator):
 
         # Filter any variables that don't occur at least twice.
         filtered_name_to_prints: Dict[IdentifiableToken, Set[int]] = {}
-        for var, prints in name_to_prints.items():
-            if len(prints) > 1:
-                filtered_name_to_prints[var] = prints
+        for var, fingerprints in name_to_prints.items():
+            if len(fingerprints) > 1:
+                filtered_name_to_prints[var] = fingerprints
 
         return filtered_name_to_prints
 
