@@ -7,8 +7,7 @@ from .. import (
     IdStore,
     File,
     Span,
-    get_progress_bar,
-    missing_spans
+    get_progress_bar
 )
 
 from typing import List, Set, Dict, Tuple, Sequence, FrozenSet
@@ -90,7 +89,7 @@ class Names(Comparator):
             submissions.add(score.sub_a)
             submissions.add(score.sub_b)
 
-        # Find all tokens that are not names, and ignore them.
+        # Find all uncompared_spans, those are spans that dont contain names.
         sub_to_uncompared_spans: Dict[FileSubmission, List[IdentifiableToken]] = {}
         for sub in submissions:
             unprocessed_tokens: List[IdentifiableToken] = []
@@ -98,7 +97,6 @@ class Names(Comparator):
                 unprocessed_tokens.extend(self._get_unprocessed_tokens(file, idStore))
             processed_tokens = self._process_tokens(sub, unprocessed_tokens)
             sub_to_uncompared_spans[sub] = [t.to_span() for t in processed_tokens if not t.is_name]
-
 
         # For each matching submission pair.
         for score in scores:
@@ -116,20 +114,15 @@ class Names(Comparator):
             # Create span matches of each matching name.
             span_matches: List[Tuple[Span, Span]] = [(a.token.to_span(), b.token.to_span()) for a, b in matching_names]
 
-            # Create spans for all ignored names
+            # Create spans for all ignored names.
             ignored_spans = [n.token.to_span() for n in ignored_names_a + ignored_names_b]
 
-            # Add all uncompared spans (spans that don't contain names) to ignored_spans
+            # Add all uncompared spans (spans that don't contain names) to ignored_spans.
             ignored_spans += sub_to_uncompared_spans[score.sub_a]
             ignored_spans += sub_to_uncompared_spans[score.sub_b]
 
             # Create the comparison's result.
-            comparisons.append(Comparison(
-                score.sub_a, 
-                score.sub_b,
-                span_matches,
-                ignored_spans
-            ))
+            comparisons.append(Comparison(score.sub_a, score.sub_b, span_matches, ignored_spans))
 
         return comparisons
 
@@ -168,7 +161,6 @@ class Names(Comparator):
             if name_a not in names_b_dict:
                 continue
             matching_names.extend(itertools.product(names_a_dict[name_a], names_b_dict[name_a]))
-
         return matching_names
 
     def _get_names(
@@ -189,15 +181,19 @@ class Names(Comparator):
         indices = self._get_name_indices(processed_tokens)
         prints = self._fingerprint_names(processed_tokens, indices)
 
+        name_to_names: Dict[IdentifiableToken, List[IdentifiableToken]] = collections.defaultdict(list)
         name_to_prints: Dict[IdentifiableToken, Set[int]] = collections.defaultdict(set)
         for name_token, fp in zip([processed_tokens[i] for i in indices], prints):
-            name_to_prints[unprocessed_token_map[name_token.id]].add(fp)
+            name = unprocessed_token_map[name_token.id]
+            name_to_prints[name].add(fp)
+            name_to_names[name].append(name)
 
         # Filter any variables that don't occur at least twice
         names: List[FingerprintedName] = []
-        for name, fingerprints in name_to_prints.items():
-            if len(fingerprints) > 1:
-                names.append(FingerprintedName(name, frozenset(fingerprints)))
+        for unique_name, fingerprints in name_to_prints.items():
+            for name in name_to_names[unique_name]:
+                if len(fingerprints) > 1:
+                    names.append(FingerprintedName(name, frozenset(fingerprints)))
 
         return names
 
@@ -220,7 +216,7 @@ class Names(Comparator):
                 type=t.type,
                 val=t.val,
                 file=file,
-                id=store[(file.id, t.val)]
+                id=store[(file.id, t.val, t.start)]
             ) for t in file_tokens
         ]
 
