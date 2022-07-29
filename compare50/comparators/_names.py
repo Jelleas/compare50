@@ -7,12 +7,10 @@ from .. import (
     IdStore,
     File,
     Span,
-    Fingerprint,
-    SourcedFingerprint,
     progress_bar
 )
 
-from typing import List, Set, Dict, Tuple
+from typing import List, Set, Dict, Tuple, Sequence
 
 import collections
 import itertools
@@ -25,7 +23,7 @@ import pygments.token
 
 @attr.s(slots=True, frozen=True)
 class IdentifiableToken(Token):
-    file = attr.ib(cmp=False, hash=False)
+    file = attr.ib(cmp=False, hash=True)
     id = attr.ib(cmp=False, hash=False)
 
 
@@ -35,19 +33,30 @@ class Names(Comparator):
 
     def score(self, submissions, archive_submissions, ignored_files):
         bar = progress_bar()
-        bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
+        bar.reset(total=math.ceil((len(submissions) + len(archive_submissions) + len(ignored_files)) / 0.9))
 
         idStore = IdStore()
-        sub_to_prints: Dict[FileSubmission, Dict[IdentifiableToken, List[int]]] = {}
-        for sub in submissions + archive_submissions:
-            sub_to_prints[sub] = self._get_name_to_prints(sub, idStore)
+        
+        # Find all prints of names to ignore
+        ignored_prints: List[Set[int]] = []
+        for file in ignored_files:
+            prints = self._get_name_to_prints(file.submission, idStore, files=[file]).values()
+            ignored_prints.extend(prints)
             bar.update()
 
+        # For each submission, find 
+        sub_to_prints: Dict[FileSubmission, Dict[IdentifiableToken, List[int]]] = {}
+        for sub in submissions + archive_submissions:
+            sub_to_prints[sub] = self._get_name_to_prints(sub, idStore, ignored_prints=ignored_prints)
+            bar.update()
+
+        # Cross compare all submissions.
         scores: List[Score] = []
         for sub_a, sub_b in itertools.combinations(submissions, r=2):
             points = len(self._get_matching_names(sub_to_prints[sub_a], sub_to_prints[sub_b]))
             scores.append(Score(sub_a, sub_b, points))
         
+        # Compare all submissions vs all archive submissions.
         for archive_sub in archive_submissions:
             for sub in submissions:
                 points = len(self._get_matching_names(sub_to_prints[sub], sub_to_prints[archive_sub]))
@@ -80,20 +89,6 @@ class Names(Comparator):
 
         return comparisons
 
-    def fingerprint_for_compare(self, file: File) -> List[SourcedFingerprint]:
-        raise NotImplementedError()
-        store = IdStore()
-        unprocessed_tokens = self._get_unprocessed_tokens(file, store)
-        unprocessed_token_map = {t.id: t for t in unprocessed_tokens}
-        processed_tokens = self._process_tokens(file.submission, unprocessed_tokens)
-
-        indices = self._get_name_indices(processed_tokens)
-        prints = self._fingerprint_names(processed_tokens, indices)
-        return super().fingerprint_for_compare(file)
-
-    def fingerprint_for_score(self, file: File) -> List[Fingerprint]:
-        raise NotImplementedError()
-    
     def _get_matching_names(
         self,
         name_to_prints_a: Dict[IdentifiableToken, List[int]],
@@ -108,9 +103,18 @@ class Names(Comparator):
 
         return matching_names
 
-    def _get_name_to_prints(self, submission: FileSubmission, store: IdStore) -> Dict[IdentifiableToken, Set[int]]:
+    def _get_name_to_prints(
+        self,
+        submission: FileSubmission,
+        store: IdStore,
+        files: Sequence[File]=(),
+        ignored_prints: Sequence[Set[int]]=()
+    ) -> Dict[IdentifiableToken, Set[int]]:
+        if not files:
+            files = submission.files
+        
         unprocessed_tokens: List[IdentifiableToken] = []
-        for file in submission.files:
+        for file in files:
             unprocessed_tokens.extend(self._get_unprocessed_tokens(file, store))
         unprocessed_token_map = {t.id: t for t in unprocessed_tokens}
         processed_tokens = self._process_tokens(submission, unprocessed_tokens)
@@ -122,10 +126,10 @@ class Names(Comparator):
         for name_token, fp in zip([processed_tokens[i] for i in indices], prints):
             name_to_prints[unprocessed_token_map[name_token.id]].add(fp)
 
-        # Filter any variables that don't occur at least twice.
+        # Filter any variables that don't occur at least twice or are part of ignored prints
         filtered_name_to_prints: Dict[IdentifiableToken, Set[int]] = {}
         for var, fingerprints in name_to_prints.items():
-            if len(fingerprints) > 1:
+            if len(fingerprints) > 1 and fingerprints not in ignored_prints:
                 filtered_name_to_prints[var] = fingerprints
 
         return filtered_name_to_prints

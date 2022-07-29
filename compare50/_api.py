@@ -34,7 +34,7 @@ class Error(Exception):
 
 def fingerprint_for_compare(
     submissions: List[FileSubmission],
-    pass_: Pass
+    comparator: ServerComparator
 ) -> List[List[SourcedFingerprint]]:
     """
     :param submissions: submissions to be fingerprinted
@@ -48,14 +48,14 @@ def fingerprint_for_compare(
     for submission in submissions:
         fps: List[SourcedFingerprint] = []
         for file in submission.files:
-            fps.extend(pass_.comparator.fingerprint_for_compare(file))
+            fps.extend(comparator.fingerprint_for_compare(file))
         all_fingerprints.append(fps)
     return all_fingerprints
 
 
 def fingerprint_for_score(
     submissions: List[FileSubmission],
-    pass_: Pass
+    comparator: ServerComparator
 ) -> List[List[Fingerprint]]:
     """
     :param submissions: submissions to be fingerprinted
@@ -69,7 +69,7 @@ def fingerprint_for_score(
     for submission in submissions:
         fps: List[Fingerprint] = []
         for file in submission.files:
-            fps.extend(pass_.comparator.fingerprint_for_score(file))
+            fps.extend(comparator.fingerprint_for_score(file))
         all_fingerprints.append(fps)
     return all_fingerprints
 

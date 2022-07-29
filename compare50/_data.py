@@ -13,7 +13,7 @@ import pygments
 import pygments.lexers
 
 
-__all__ = ["Pass", "Comparator", "Explainer", "Explanation", "File", "FileSubmission",
+__all__ = ["Pass", "Comparator", "ServerComparator", "Explainer", "Explanation", "File", "FileSubmission",
            "FingerprintSubmission", "Submission", "Span", "Score", "Compare50Result", "Comparison",
             "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore"]
 
@@ -110,14 +110,6 @@ class Comparator(metaclass=abc.ABCMeta):
         """
         pass
 
-    @abc.abstractmethod
-    def fingerprint_for_score(self, file: "File") -> List["Fingerprint"]:
-        pass
-
-    @abc.abstractmethod
-    def fingerprint_for_compare(self, file: "File") -> List["SourcedFingerprint"]:
-        pass
-
 
 class ServerComparator(Comparator):
     """
@@ -132,6 +124,14 @@ class ServerComparator(Comparator):
     ):
         pass
 
+    @abc.abstractmethod
+    def fingerprint_for_score(self, file: "File") -> List["Fingerprint"]:
+        pass
+
+    @abc.abstractmethod
+    def fingerprint_for_compare(self, file: "File") -> List["SourcedFingerprint"]:
+        pass
+
 
 class Explainer(metaclass=abc.ABCMeta):
     @property
@@ -142,7 +142,7 @@ class Explainer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def explain(
         self, 
-        comparator: Comparator,
+        comparator: Union[Comparator, ServerComparator],
         results: List["Compare50Result"], 
         submissions: List["FileSubmission"], 
         archive_submissions: List["FileSubmission"], 
