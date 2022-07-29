@@ -7,7 +7,8 @@ from .. import (
     IdStore,
     File,
     Span,
-    get_progress_bar
+    get_progress_bar,
+    missing_spans
 )
 
 from typing import List, Set, Dict, Tuple, Sequence, FrozenSet
@@ -25,15 +26,20 @@ import pygments.token
 class IdentifiableToken(Token):
     file: File = attr.ib(cmp=True, hash=True)
     id: int = attr.ib(cmp=False, hash=False)
+    is_name = attr.ib(
+        cmp=False,
+        hash=False,
+        init=False,
+        default=attr.Factory(lambda self: self.type == pygments.token.Name, takes_self=True)
+    )
 
+    def to_span(self) -> Span:
+        return Span(self.file, self.start, self.end)
 
 @attr.s(slots=True, frozen=True)
 class FingerprintedName:
     token: IdentifiableToken = attr.ib(cmp=False, hash=False)
     fingerprints: FrozenSet[int] = attr.ib()
-
-    def to_span(self) -> Span:
-        return Span(self.token.file, self.token.start, self.token.end)
 
 
 class Names(Comparator):
@@ -78,24 +84,45 @@ class Names(Comparator):
         # Find all prints of names to ignore.
         ignored_names = self._get_ignored_names(ignored_files, idStore)
         
+        # Grab all submissions from scores.
+        submissions: Set[FileSubmission] = set()
+        for score in scores:
+            submissions.add(score.sub_a)
+            submissions.add(score.sub_b)
+
+        # Find all tokens that are not names, and ignore them.
+        sub_to_uncompared_spans: Dict[FileSubmission, List[IdentifiableToken]] = {}
+        for sub in submissions:
+            unprocessed_tokens: List[IdentifiableToken] = []
+            for file in sub.files:
+                unprocessed_tokens.extend(self._get_unprocessed_tokens(file, idStore))
+            processed_tokens = self._process_tokens(sub, unprocessed_tokens)
+            sub_to_uncompared_spans[sub] = [t.to_span() for t in processed_tokens if not t.is_name]
+
+
         # For each matching submission pair.
         for score in scores:
             # Get their names and prints.
             names_a = self._get_names(score.sub_a, idStore)
             names_b = self._get_names(score.sub_b, idStore)
 
+            # Filter out any ignored names.
             names_a, ignored_names_a = self._filter_ignored_names(names_a, ignored_names)
             names_b, ignored_names_b = self._filter_ignored_names(names_b, ignored_names)
 
             # Find all names that match.
             matching_names = self._get_matching_names(names_a, names_b)
 
-            # Create spans (regions within a submission) that match.
-            span_matches: List[Span] = [(a.to_span(), b.to_span()) for a, b in matching_names]
+            # Create span matches of each matching name.
+            span_matches: List[Tuple[Span, Span]] = [(a.token.to_span(), b.token.to_span()) for a, b in matching_names]
 
             # Create spans for all ignored names
-            ignored_spans = [n.to_span() for n in ignored_names_a + ignored_names_b]
-            
+            ignored_spans = [n.token.to_span() for n in ignored_names_a + ignored_names_b]
+
+            # Add all uncompared spans (spans that don't contain names) to ignored_spans
+            ignored_spans += sub_to_uncompared_spans[score.sub_a]
+            ignored_spans += sub_to_uncompared_spans[score.sub_b]
+
             # Create the comparison's result.
             comparisons.append(Comparison(
                 score.sub_a, 
@@ -148,7 +175,7 @@ class Names(Comparator):
         self,
         submission: FileSubmission,
         store: IdStore,
-        files: Sequence[File]=()
+        files: Sequence[File]=(),
     ) -> List[FingerprintedName]:
         if not files:
             files = submission.files
@@ -198,7 +225,7 @@ class Names(Comparator):
         ]
 
     def _get_name_indices(self, tokens: List[IdentifiableToken]) -> List[int]:
-        return [i for i, t in enumerate(tokens) if t.type == pygments.token.Name]
+        return [i for i, t in enumerate(tokens) if t.is_name]
 
     def _fingerprint_names(self, tokens: List[IdentifiableToken], indices: List[int]) -> List[int]:
         prints: List[int] = []

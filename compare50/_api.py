@@ -32,48 +32,6 @@ class Error(Exception):
     pass
 
 
-def fingerprint_for_compare(
-    submissions: List[FileSubmission],
-    comparator: ServerComparator
-) -> List[List[SourcedFingerprint]]:
-    """
-    :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.FileSubmission`]
-    :param pass_: pass whose comparator should be use to fingerprint the submissions
-    :type pass_: :class:`compare50.Pass`
-   
-    Fingerprint submissions
-    """
-    all_fingerprints: List[List[SourcedFingerprint]] = []
-    for submission in submissions:
-        fps: List[SourcedFingerprint] = []
-        for file in submission.files:
-            fps.extend(comparator.fingerprint_for_compare(file))
-        all_fingerprints.append(fps)
-    return all_fingerprints
-
-
-def fingerprint_for_score(
-    submissions: List[FileSubmission],
-    comparator: ServerComparator
-) -> List[List[Fingerprint]]:
-    """
-    :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.FileSubmission`]
-    :param pass_: pass whose comparator should be use to fingerprint the submissions
-    :type pass_: :class:`compare50.Pass`
-
-    Fingerprint submissions
-    """
-    all_fingerprints: List[List[Fingerprint]] = []
-    for submission in submissions:
-        fps: List[Fingerprint] = []
-        for file in submission.files:
-            fps.extend(comparator.fingerprint_for_score(file))
-        all_fingerprints.append(fps)
-    return all_fingerprints
-
-
 def rank(
     submissions: List[FileSubmission], 
     archive_submissions: List[FileSubmission], 
@@ -188,6 +146,48 @@ def compare(
                                        sub_match_to_ignored_spans[sub_match]))
 
     return results
+
+
+def fingerprint_for_compare(
+    submissions: List[FileSubmission],
+    comparator: ServerComparator
+) -> List[List[SourcedFingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.FileSubmission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+   
+    Fingerprint submissions
+    """
+    all_fingerprints: List[List[SourcedFingerprint]] = []
+    for submission in submissions:
+        fps: List[SourcedFingerprint] = []
+        for file in submission.files:
+            fps.extend(comparator.fingerprint_for_compare(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
+
+
+def fingerprint_for_score(
+    submissions: List[FileSubmission],
+    comparator: ServerComparator
+) -> List[List[Fingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.FileSubmission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+
+    Fingerprint submissions
+    """
+    all_fingerprints: List[List[Fingerprint]] = []
+    for submission in submissions:
+        fps: List[Fingerprint] = []
+        for file in submission.files:
+            fps.extend(comparator.fingerprint_for_score(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
 
 
 def missing_spans(file, original_tokens=None, processed_tokens=None):
