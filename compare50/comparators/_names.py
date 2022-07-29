@@ -10,7 +10,7 @@ from .. import (
     get_progress_bar
 )
 
-from typing import List, Set, Dict, Tuple, Sequence
+from typing import List, Set, Dict, Tuple, Sequence, FrozenSet
 
 import collections
 import itertools
@@ -30,7 +30,10 @@ class IdentifiableToken(Token):
 @attr.s(slots=True, frozen=True)
 class FingerprintedName:
     token: IdentifiableToken = attr.ib(cmp=False, hash=False)
-    fingerprints: Set[int] = attr.ib()
+    fingerprints: FrozenSet[int] = attr.ib()
+
+    def to_span(self) -> Span:
+        return Span(self.token.file, self.token.start, self.token.end)
 
 
 class Names(Comparator):
@@ -49,7 +52,9 @@ class Names(Comparator):
         # For each submission, find its names and fingerprints.
         sub_to_names: Dict[FileSubmission, List[FingerprintedName]] = {}
         for sub in submissions + archive_submissions:
-            sub_to_names[sub] = self._get_names(sub, idStore, ignored_names=ignored_names)
+            names = self._get_names(sub, idStore)
+            names, _ = self._filter_ignored_names(names, ignored_names)
+            sub_to_names[sub] = names
             bar.update()
 
         # Cross compare all submissions.
@@ -79,44 +84,71 @@ class Names(Comparator):
             names_a = self._get_names(score.sub_a, idStore)
             names_b = self._get_names(score.sub_b, idStore)
 
+            names_a, ignored_names_a = self._filter_ignored_names(names_a, ignored_names)
+            names_b, ignored_names_b = self._filter_ignored_names(names_b, ignored_names)
+
             # Find all names that match.
             matching_names = self._get_matching_names(names_a, names_b)
 
             # Create spans (regions within a submission) that match.
-            span_matches: List[Span] = []
-            for a, b in matching_names:
-                span_matches.append((
-                    Span(a.token.file, a.token.start, a.token.end),
-                    Span(b.token.file, b.token.start, b.token.end)
-                ))
+            span_matches: List[Span] = [(a.to_span(), b.to_span()) for a, b in matching_names]
+
+            # Create spans for all ignored names
+            ignored_spans = [n.to_span() for n in ignored_names_a + ignored_names_b]
             
             # Create the comparison's result.
             comparisons.append(Comparison(
                 score.sub_a, 
                 score.sub_b,
                 span_matches,
-                []
+                ignored_spans
             ))
 
         return comparisons
+
+    def _filter_ignored_names(
+        self,
+        names: Sequence[FingerprintedName],
+        ignored_names: Sequence[FingerprintedName]
+    ) -> Tuple[List[FingerprintedName], List[FingerprintedName]]:
+        new_names: List[FingerprintedName] = []
+        new_ignored_names: List[FingerprintedName] = []
+        
+        ignored_names_set = set(ignored_names)
+        for name in names:
+            if name in ignored_names_set:
+                new_ignored_names.append(name)
+            else:
+                new_names.append(name)
+        
+        return (new_names, new_ignored_names)
 
     def _get_matching_names(
         self,
         names_a: List[FingerprintedName],
         names_b: List[FingerprintedName]
     ) -> List[Tuple[FingerprintedName, FingerprintedName]]:
+        names_a_dict = collections.defaultdict(list)
+        for name in names_a:
+            names_a_dict[name].append(name)
+
+        names_b_dict = collections.defaultdict(list)
+        for name in names_b:
+            names_b_dict[name].append(name)
+
         matching_names: List[Tuple[FingerprintedName, FingerprintedName]] = []
-        for name_a, name_b in itertools.product(names_a, names_b):
-            if name_a == name_b:
-                matching_names.append((name_a, name_b))
+        for name_a in names_a_dict:
+            if name_a not in names_b_dict:
+                continue
+            matching_names.extend(itertools.product(names_a_dict[name_a], names_b_dict[name_a]))
+
         return matching_names
 
     def _get_names(
         self,
         submission: FileSubmission,
         store: IdStore,
-        files: Sequence[File]=(),
-        ignored_names: Sequence[FingerprintedName]=()
+        files: Sequence[File]=()
     ) -> List[FingerprintedName]:
         if not files:
             files = submission.files
@@ -134,12 +166,11 @@ class Names(Comparator):
         for name_token, fp in zip([processed_tokens[i] for i in indices], prints):
             name_to_prints[unprocessed_token_map[name_token.id]].add(fp)
 
-        # Filter any variables that don't occur at least twice or are part of ignored prints
-        ignored_prints: List[Set[int]] = [name.fingerprints for name in ignored_names]
+        # Filter any variables that don't occur at least twice
         names: List[FingerprintedName] = []
         for name, fingerprints in name_to_prints.items():
-            if len(fingerprints) > 1 and fingerprints not in ignored_prints:
-                names.append(FingerprintedName(name, fingerprints))
+            if len(fingerprints) > 1:
+                names.append(FingerprintedName(name, frozenset(fingerprints)))
 
         return names
 
