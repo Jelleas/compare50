@@ -7,7 +7,7 @@ from .. import (
     IdStore,
     File,
     Span,
-    progress_bar
+    get_progress_bar
 )
 
 from typing import List, Set, Dict, Tuple, Sequence
@@ -38,7 +38,7 @@ class Names(Comparator):
         pass
 
     def score(self, submissions, archive_submissions, ignored_files):
-        bar = progress_bar()
+        bar = get_progress_bar()
         bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
 
         idStore = IdStore()
