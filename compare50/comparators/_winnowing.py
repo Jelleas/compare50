@@ -12,11 +12,11 @@ from typing import List, Set
 import attr
 import numpy as np
 
-from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint, SourcedFingerprint
+from .. import _api, Comparison, ServerComparator, File, Span, Score, Fingerprint, SourcedFingerprint
 from .._data import FileSubmission, FingerprintSubmission
 
 
-class Winnowing(Comparator):
+class Winnowing(ServerComparator):
     """ Comparator utilizing the (robust) Winnowing algorithm as described https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
 
     :param t: the guarantee threshold; any matching sequence of tokens of length at least t is guaranteed to be matched
@@ -55,9 +55,10 @@ class Winnowing(Comparator):
                         frequency_map[hash_] += 1
                     index.include_all(idx)
                     bar.update()
+                    
             # Ignored files
             for idx in executor.map(self._index_file(ScoreIndex, (self.k, self.t)), ignored_files):
-                index.include_all(idx)
+                ignored_index.include_all(idx)
                 bar.update()
 
         submission_index.ignore_all(ignored_index)

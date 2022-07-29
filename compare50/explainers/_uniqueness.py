@@ -65,7 +65,6 @@ class Uniqueness(Explainer):
         archive_submissions: List[FileSubmission], 
         ignored_files: Set[File]
     ) -> List[Explanation]:
-
         if not isinstance(comparator, ServerComparator):
             raise Error("Uniqueness explainer needs a ServerComparator, please update your pass.")
 
