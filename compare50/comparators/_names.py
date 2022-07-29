@@ -23,8 +23,14 @@ import pygments.token
 
 @attr.s(slots=True, frozen=True)
 class IdentifiableToken(Token):
-    file = attr.ib(cmp=False, hash=True)
-    id = attr.ib(cmp=False, hash=False)
+    file: File = attr.ib(cmp=True, hash=True)
+    id: int = attr.ib(cmp=False, hash=False)
+
+
+@attr.s(slots=True, frozen=True)
+class FingerprintedName:
+    token: IdentifiableToken = attr.ib(cmp=False, hash=False)
+    fingerprints: Set[int] = attr.ib()
 
 
 class Names(Comparator):
@@ -38,24 +44,24 @@ class Names(Comparator):
         idStore = IdStore()
         
         # Find all prints of names to ignore.
-        ignored_prints = self._get_ignored_prints(ignored_files, idStore)
+        ignored_names = self._get_ignored_names(ignored_files, idStore)
 
-        # For each submission, find its variables and fingerprints.
-        sub_to_prints: Dict[FileSubmission, Dict[IdentifiableToken, List[int]]] = {}
+        # For each submission, find its names and fingerprints.
+        sub_to_names: Dict[FileSubmission, List[FingerprintedName]] = {}
         for sub in submissions + archive_submissions:
-            sub_to_prints[sub] = self._get_name_to_prints(sub, idStore, ignored_prints=ignored_prints)
+            sub_to_names[sub] = self._get_names(sub, idStore, ignored_names=ignored_names)
             bar.update()
 
         # Cross compare all submissions.
         scores: List[Score] = []
         for sub_a, sub_b in itertools.combinations(submissions, r=2):
-            points = len(self._get_matching_names(sub_to_prints[sub_a], sub_to_prints[sub_b]))
+            points = len(self._get_matching_names(sub_to_names[sub_a], sub_to_names[sub_b]))
             scores.append(Score(sub_a, sub_b, points))
         
         # Compare all submissions vs all archive submissions.
         for archive_sub in archive_submissions:
             for sub in submissions:
-                points = len(self._get_matching_names(sub_to_prints[sub], sub_to_prints[archive_sub]))
+                points = len(self._get_matching_names(sub_to_names[sub], sub_to_names[archive_sub]))
                 scores.append(Score(sub, archive_sub, points))
 
         return scores
@@ -65,23 +71,23 @@ class Names(Comparator):
         comparisons: List[Comparison] = []
 
         # Find all prints of names to ignore.
-        ignored_prints = self._get_ignored_prints(ignored_files, idStore)
+        ignored_names = self._get_ignored_names(ignored_files, idStore)
         
         # For each matching submission pair.
         for score in scores:
             # Get their names and prints.
-            name_to_prints_a = self._get_name_to_prints(score.sub_a, idStore, ignored_prints=ignored_prints)
-            name_to_prints_b = self._get_name_to_prints(score.sub_b, idStore, ignored_prints=ignored_prints)
+            names_a = self._get_names(score.sub_a, idStore)
+            names_b = self._get_names(score.sub_b, idStore)
 
             # Find all names that match.
-            matching_names = self._get_matching_names(name_to_prints_a, name_to_prints_b)
+            matching_names = self._get_matching_names(names_a, names_b)
 
             # Create spans (regions within a submission) that match.
             span_matches: List[Span] = []
-            for var_a, var_b in matching_names:
+            for a, b in matching_names:
                 span_matches.append((
-                    Span(var_a.file, var_a.start, var_a.end),
-                    Span(var_b.file, var_b.start, var_b.end)
+                    Span(a.token.file, a.token.start, a.token.end),
+                    Span(b.token.file, b.token.start, b.token.end)
                 ))
             
             # Create the comparison's result.
@@ -96,25 +102,22 @@ class Names(Comparator):
 
     def _get_matching_names(
         self,
-        name_to_prints_a: Dict[IdentifiableToken, List[int]],
-        name_to_prints_b: Dict[IdentifiableToken, List[int]]
-    ) -> List[Tuple[IdentifiableToken, IdentifiableToken]]:
-
-        matching_names: List[Tuple[IdentifiableToken, IdentifiableToken]] = []
-
-        for (name_a, prints_a), (name_b, prints_b) in itertools.product(name_to_prints_a.items(), name_to_prints_b.items()):
-            if prints_a == prints_b:
+        names_a: List[FingerprintedName],
+        names_b: List[FingerprintedName]
+    ) -> List[Tuple[FingerprintedName, FingerprintedName]]:
+        matching_names: List[Tuple[FingerprintedName, FingerprintedName]] = []
+        for name_a, name_b in itertools.product(names_a, names_b):
+            if name_a == name_b:
                 matching_names.append((name_a, name_b))
-
         return matching_names
 
-    def _get_name_to_prints(
+    def _get_names(
         self,
         submission: FileSubmission,
         store: IdStore,
         files: Sequence[File]=(),
-        ignored_prints: Sequence[Set[int]]=()
-    ) -> Dict[IdentifiableToken, Set[int]]:
+        ignored_names: Sequence[FingerprintedName]=()
+    ) -> List[FingerprintedName]:
         if not files:
             files = submission.files
         
@@ -132,19 +135,20 @@ class Names(Comparator):
             name_to_prints[unprocessed_token_map[name_token.id]].add(fp)
 
         # Filter any variables that don't occur at least twice or are part of ignored prints
-        filtered_name_to_prints: Dict[IdentifiableToken, Set[int]] = {}
-        for var, fingerprints in name_to_prints.items():
+        ignored_prints: List[Set[int]] = [name.fingerprints for name in ignored_names]
+        names: List[FingerprintedName] = []
+        for name, fingerprints in name_to_prints.items():
             if len(fingerprints) > 1 and fingerprints not in ignored_prints:
-                filtered_name_to_prints[var] = fingerprints
+                names.append(FingerprintedName(name, fingerprints))
 
-        return filtered_name_to_prints
+        return names
 
-    def _get_ignored_prints(self, ignored_files: Sequence[File], store: IdStore) -> List[Set[int]]:
-        ignored_prints: List[Set[int]] = []
+    def _get_ignored_names(self, ignored_files: Sequence[File], store: IdStore) -> List[FingerprintedName]:
+        ignored_names: List[FingerprintedName] = []
         for file in ignored_files:
-            prints = self._get_name_to_prints(file.submission, store, files=[file]).values()
-            ignored_prints.extend(prints)
-        return ignored_prints
+            names = self._get_names(file.submission, store, files=[file])
+            ignored_names.extend(names)
+        return ignored_names
 
     def _process_tokens(self, submission: FileSubmission, tokens: List[IdentifiableToken]) -> List[IdentifiableToken]:
         return list(submission.preprocessor(tokens))
@@ -158,7 +162,7 @@ class Names(Comparator):
                 type=t.type,
                 val=t.val,
                 file=file,
-                id=store.get((file.id, t.val))
+                id=store[(file.id, t.val)]
             ) for t in file_tokens
         ]
 
