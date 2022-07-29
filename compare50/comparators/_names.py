@@ -33,18 +33,14 @@ class Names(Comparator):
 
     def score(self, submissions, archive_submissions, ignored_files):
         bar = progress_bar()
-        bar.reset(total=math.ceil((len(submissions) + len(archive_submissions) + len(ignored_files)) / 0.9))
+        bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
 
         idStore = IdStore()
         
-        # Find all prints of names to ignore
-        ignored_prints: List[Set[int]] = []
-        for file in ignored_files:
-            prints = self._get_name_to_prints(file.submission, idStore, files=[file]).values()
-            ignored_prints.extend(prints)
-            bar.update()
+        # Find all prints of names to ignore.
+        ignored_prints = self._get_ignored_prints(ignored_files, idStore)
 
-        # For each submission, find 
+        # For each submission, find its variables and fingerprints.
         sub_to_prints: Dict[FileSubmission, Dict[IdentifiableToken, List[int]]] = {}
         for sub in submissions + archive_submissions:
             sub_to_prints[sub] = self._get_name_to_prints(sub, idStore, ignored_prints=ignored_prints)
@@ -68,11 +64,19 @@ class Names(Comparator):
         idStore = IdStore()
         comparisons: List[Comparison] = []
 
+        # Find all prints of names to ignore.
+        ignored_prints = self._get_ignored_prints(ignored_files, idStore)
+        
+        # For each matching submission pair.
         for score in scores:
-            name_to_prints_a = self._get_name_to_prints(score.sub_a, idStore)
-            name_to_prints_b = self._get_name_to_prints(score.sub_b, idStore)
+            # Get their names and prints.
+            name_to_prints_a = self._get_name_to_prints(score.sub_a, idStore, ignored_prints=ignored_prints)
+            name_to_prints_b = self._get_name_to_prints(score.sub_b, idStore, ignored_prints=ignored_prints)
+
+            # Find all names that match.
             matching_names = self._get_matching_names(name_to_prints_a, name_to_prints_b)
 
+            # Create spans (regions within a submission) that match.
             span_matches: List[Span] = []
             for var_a, var_b in matching_names:
                 span_matches.append((
@@ -80,6 +84,7 @@ class Names(Comparator):
                     Span(var_b.file, var_b.start, var_b.end)
                 ))
             
+            # Create the comparison's result.
             comparisons.append(Comparison(
                 score.sub_a, 
                 score.sub_b,
@@ -133,6 +138,13 @@ class Names(Comparator):
                 filtered_name_to_prints[var] = fingerprints
 
         return filtered_name_to_prints
+
+    def _get_ignored_prints(self, ignored_files: Sequence[File], store: IdStore) -> List[Set[int]]:
+        ignored_prints: List[Set[int]] = []
+        for file in ignored_files:
+            prints = self._get_name_to_prints(file.submission, store, files=[file]).values()
+            ignored_prints.extend(prints)
+        return ignored_prints
 
     def _process_tokens(self, submission: FileSubmission, tokens: List[IdentifiableToken]) -> List[IdentifiableToken]:
         return list(submission.preprocessor(tokens))
