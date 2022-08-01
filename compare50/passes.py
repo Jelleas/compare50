@@ -1,5 +1,5 @@
 from pkg_resources import resource_filename
-from typing import List, Callable
+from typing import List, Callable, Iterable
 
 from . import comparators, preprocessors, explainers
 from ._data import Pass, Token
@@ -32,7 +32,7 @@ class text(Pass):
 class exact(Pass):
     """Removes nothing, not even whitespace, then uses the winnowing algorithm to compare submissions."""
     default = True
-    preprocessors: List[Callable[[List["Token"]], List["Token"]]] = []
+    preprocessors: List[Callable[[Iterable["Token"]], Iterable["Token"]]] = []
     comparator = comparators.Winnowing(k=25, t=35)
 
 

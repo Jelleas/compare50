@@ -1,6 +1,6 @@
 
 import typing
-from typing import List, Set, Dict, Tuple, Type, Callable, TypeVar, Union, Generic
+from typing import List, Set, Dict, Tuple, Type, Callable, TypeVar, Union, Generic, Any, Iterable
 
 import abc
 from collections.abc import Mapping, Sequence
@@ -19,13 +19,13 @@ __all__ = ["Pass", "Comparator", "ServerComparator", "Explainer", "Explanation",
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
-def cached_class(*args):
+def cached_class(*args: Tuple[str, Callable[[], Any]]):
     """
     Decorator for a class with caches (state). Use as follows:
     @cached_class(("property_name", lambda: "callback_that_produces_initial_value"))
     All caches can be cleared by calling `clear_all_caches()`
     """
-    def decorator(cls):
+    def decorator(cls: Type):
         for arg, clear_callback in args:
             setattr(cls, arg, clear_callback())
             _caches.append((cls, arg, clear_callback))
@@ -77,7 +77,7 @@ class Pass(metaclass=_PassRegistry):
 
     @property
     @abc.abstractmethod
-    def preprocessors(self) -> List[Callable[[List["Token"]], List["Token"]]]:
+    def preprocessors(self) -> List[Callable[[Iterable["Token"]], Iterable["Token"]]]:
         pass
     
     @property
