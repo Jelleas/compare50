@@ -1,14 +1,15 @@
 import re
 
-from typing import Iterable
+from typing import Iterable, TypeVar
 
 import attr
 from pygments.token import Comment, Name, Number, String, Text, Keyword
 
 from . import Token
 
+T = TypeVar("T", bound=Token)
 
-def strip_whitespace(tokens: Iterable[Token]) -> Iterable[Token]:
+def strip_whitespace(tokens: Iterable[T]) -> Iterable[T]:
     """Remove all whitespace from tokens."""
     for tok in tokens:
         val = tok.val
@@ -18,7 +19,7 @@ def strip_whitespace(tokens: Iterable[Token]) -> Iterable[Token]:
             yield attr.evolve(tok, val=val)
 
 
-def normalize_builtin_types(tokens: Iterable[Token]) -> Iterable[Token]:
+def normalize_builtin_types(tokens: Iterable[T]) -> Iterable[T]:
     """Normalize builtin type names"""
     for tok in tokens:
         if tok.type in Keyword.Type:
@@ -26,20 +27,20 @@ def normalize_builtin_types(tokens: Iterable[Token]) -> Iterable[Token]:
         yield tok
 
 
-def strip_comments(tokens: Iterable[Token]) -> Iterable[Token]:
+def strip_comments(tokens: Iterable[T]) -> Iterable[T]:
     """Remove all comments from tokens."""
     for tok in tokens:
         if tok.type not in (Comment.Multiline, Comment.Single, Comment.Hashbang):
             yield tok
 
 
-def normalize_case(tokens: Iterable[Token]) -> Iterable[Token]:
+def normalize_case(tokens: Iterable[T]) -> Iterable[T]:
     """Make all tokens lower case."""
     for tok in tokens:
         yield attr.evolve(tok, val=tok.val.lower())
 
 
-def normalize_identifiers(tokens: Iterable[Token]) -> Iterable[Token]:
+def normalize_identifiers(tokens: Iterable[T]) -> Iterable[T]:
     """Replace all identifiers with ``v``"""
     for tok in tokens:
         if tok.type in Name:
@@ -47,7 +48,7 @@ def normalize_identifiers(tokens: Iterable[Token]) -> Iterable[Token]:
         yield tok
 
 
-def normalize_string_literals(tokens: Iterable[Token]) -> Iterable[Token]:
+def normalize_string_literals(tokens: Iterable[T]) -> Iterable[T]:
     """Replace string literals with empty strings."""
     string_token = None
     for tok in tokens:
@@ -66,7 +67,7 @@ def normalize_string_literals(tokens: Iterable[Token]) -> Iterable[Token]:
             yield tok
 
 
-def normalize_numeric_literals(tokens: Iterable[Token]) -> Iterable[Token]:
+def normalize_numeric_literals(tokens: Iterable[T]) -> Iterable[T]:
     """Replace numeric literals with their types."""
     for tok in tokens:
         if tok.type in Number.Integer:
@@ -79,14 +80,14 @@ def normalize_numeric_literals(tokens: Iterable[Token]) -> Iterable[Token]:
             yield tok
 
 
-def extract_identifiers(tokens: Iterable[Token]) -> Iterable[Token]:
+def extract_identifiers(tokens: Iterable[T]) -> Iterable[T]:
     """Remove all tokens that don't represent identifiers."""
     for tok in tokens:
         if tok.type in Name:
             yield tok
 
 
-def by_character(tokens: Iterable[Token]) -> Iterable[Token]:
+def by_character(tokens: Iterable[T]) -> Iterable[T]:
     """Make a token for each character."""
     for tok in tokens:
         for i, c in enumerate(tok.val):
@@ -99,28 +100,28 @@ def by_character(tokens: Iterable[Token]) -> Iterable[Token]:
             )
 
 
-def token_printer(tokens: Iterable[Token]) -> Iterable[Token]:
+def token_printer(tokens: Iterable[T]) -> Iterable[T]:
     """Print each token. Useful for debugging."""
     for tok in tokens:
         print(tok)
         yield tok
 
 
-def text_printer(tokens: Iterable[Token]) -> Iterable[Token]:
+def text_printer(tokens: Iterable[T]) -> Iterable[T]:
     """Print token values. Useful for debugging."""
     for tok in tokens:
         print(tok.val, end="")
         yield tok
 
 
-def comments(tokens: Iterable[Token]) -> Iterable[Token]:
+def comments(tokens: Iterable[T]) -> Iterable[T]:
     """Remove all tokens that aren't comments."""
     for t in tokens:
         if t.type == Comment.Single or t.type == Comment.Multiline:
             yield t
 
 
-def words(tokens: Iterable[Token]) -> Iterable[Token]:
+def words(tokens: Iterable[T]) -> Iterable[T]:
     """Split tokens into tokens containing just one word."""
     for t in tokens:
         start = t.start
@@ -134,7 +135,7 @@ def words(tokens: Iterable[Token]) -> Iterable[Token]:
             )
 
 
-def split_on_whitespace(tokens: Iterable[Token]) -> Iterable[Token]:
+def split_on_whitespace(tokens: Iterable[T]) -> Iterable[T]:
     """Split values of tokens on whitespace into new tokens"""
     for t in tokens:
         start = t.start

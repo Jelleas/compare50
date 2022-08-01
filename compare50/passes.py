@@ -4,7 +4,7 @@ from typing import List, Callable, Iterable
 from . import comparators, preprocessors, explainers
 from ._data import Pass, Token
 
-__all__ = ["structure", "text", "exact", "nocomments", "misspellings"]
+__all__ = ["structure", "text", "exact", "names", "nocomments", "misspellings"]
 
 
 class structure(Pass):

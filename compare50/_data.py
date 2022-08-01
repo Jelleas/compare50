@@ -1,12 +1,11 @@
 
 import typing
-from typing import List, Set, Dict, Tuple, Type, Callable, TypeVar, Union, Generic, Any, Iterable
+from typing import Hashable, Iterator, Mapping, List, Set, Dict, Tuple, Type, Callable, TypeVar, Union, Generic, Any, Iterable
 
 import abc
-from collections.abc import Mapping, Sequence
+import collections.abc
 from collections import defaultdict
 import pathlib
-import numbers
 
 import attr
 import pygments
@@ -14,12 +13,12 @@ import pygments.lexers
 
 
 __all__ = ["Pass", "Comparator", "ServerComparator", "Explainer", "Explanation", "File", "FileSubmission",
-           "FingerprintSubmission", "Submission", "Span", "Score", "Compare50Result", "Comparison",
-            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore"]
+           "FingerprintSubmission", "Submission", "Span", "Score", "Group", "Compare50Result", "Comparison",
+            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore", "Preprocessor"]
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
-def cached_class(*args: Tuple[str, Callable[[], Any]]):
+def cached_class(*args: Tuple[str, Callable[[], Any]]) -> Any:
     """
     Decorator for a class with caches (state). Use as follows:
     @cached_class(("property_name", lambda: "callback_that_produces_initial_value"))
@@ -33,7 +32,7 @@ def cached_class(*args: Tuple[str, Callable[[], Any]]):
     return decorator
 
 
-def clear_all_caches():
+def clear_all_caches() -> None:
     """Clear all caches of classes decorated by cached_class."""
     for cls, arg, clear_callback in _caches:
         setattr(cls, arg, clear_callback())
@@ -51,11 +50,11 @@ class _PassRegistry(abc.ABCMeta):
         return cls
 
     @staticmethod
-    def _get(name):
+    def _get(name: str) -> Type:
         return _PassRegistry.passes[name]
 
     @staticmethod
-    def _get_all():
+    def _get_all() -> List[Type]:
         return list(_PassRegistry.passes.values())
 
 
@@ -161,68 +160,84 @@ class Explainer(metaclass=abc.ABCMeta):
         pass
 
 
-class IdStore(Mapping):
+T = TypeVar("T")
+
+class IdStore(Mapping[T, int]):
     """
     Mapping from objects to IDs. If object has not been added to the store,
     a new id is generated for it.
     """
-    def __init__(self, key=lambda obj: obj):
-        self.objects = []
+    def __init__(self, key: Callable[[T], Hashable]=lambda obj: obj):
+        self.objects: List[T] = []
         self._key = key
-        self._ids = {}
+        self._ids: Dict[Hashable, int] = {}
 
-    def __getitem__(self, obj) -> int:
+    def __getitem__(self, obj: T) -> int:
         key = self._key(obj)
         if key not in self._ids:
             self._ids[key] = len(self.objects)
             self.objects.append(obj)
         return self._ids[key]
 
-    def __iter__(self):
-        return iter(self.objects.values())
+    def __iter__(self) -> Iterator[T]:
+        return iter(self.objects)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.objects)
-
-
-def _to_path_tuple(fs):
-    """
-    Convert iterable yielding strings to tuple containing paths.
-    Ideally we could use an attrs converter decorator,but it doesn't exist yet
-    https://github.com/python-attrs/attrs/pull/404
-    """
-    return tuple(map(pathlib.Path, fs))
 
 
 @attr.s(slots=True, frozen=True)
 class Fingerprint:
     """A comparable and hashable fingerprint."""
     value = attr.ib()
-    submission_id = attr.ib(cmp=False, hash=False)
+    submission_id: int = attr.ib(cmp=False, hash=False)
 
 
 @attr.s(slots=True, frozen=True)
 class SourcedFingerprint:
     """A Fingerprint with a source (a Span)."""
     value = attr.ib()
-    span = attr.ib(cmp=False, hash=False)
+    span: "Span" = attr.ib(cmp=False, hash=False)
 
 
 class Submission(metaclass=abc.ABCMeta):
     """Abstract base class for Submissions."""
     @property
     @abc.abstractmethod
-    def id(self):
-        pass   
+    def id(self) -> int:
+        pass
 
     @property
     @abc.abstractmethod
-    def is_archive(self):
+    def is_archive(self) -> bool:
         pass
 
     @abc.abstractclassmethod
-    def get(cls, id):
+    def get(cls, id: int) -> "Submission":
         pass
+    
+
+@attr.s(slots=True)
+class Preprocessor:
+    """
+    A preprocessor of tokens.
+    Hack to ensure that composed preprocessor is serializable by Pickle.
+    """
+    preprocessors: List[Callable[[Iterable["Token"]], Iterable["Token"]]] = attr.ib()
+
+    def __call__(self, tokens: Iterable["Token"]) -> Iterable["Token"]:
+        for preprocessor in self.preprocessors:
+            tokens = preprocessor(tokens)
+        return tokens
+
+
+def _to_path_tuple(fs: Iterable[str]) -> Tuple[pathlib.Path, ...]:
+    """
+    Convert iterable yielding strings to tuple containing paths.
+    Ideally we could use an attrs converter decorator,but it doesn't exist yet
+    https://github.com/python-attrs/attrs/pull/404
+    """
+    return tuple(map(pathlib.Path, fs))
 
 
 @cached_class(
@@ -241,20 +256,22 @@ class FileSubmission(Submission):
     Represents a single submission. Submissions may either be single files or
     directories containing many files.
     """
+    _store: IdStore["FileSubmission"]
+
     path = attr.ib(converter=pathlib.Path, cmp=False)
     files: List["File"] = attr.ib(cmp=False)
     large_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
     undecodable_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
-    preprocessor = attr.ib(default=lambda tokens: tokens, cmp=False, repr=False)
-    is_archive = attr.ib(default=False, cmp=False)
-    id = attr.ib(init=False)
+    preprocessor: Preprocessor = attr.ib(default=Preprocessor([]), cmp=False, repr=False)
+    is_archive: bool = attr.ib(default=False, cmp=False)
+    id: int = attr.ib(init=False)
 
     def __attrs_post_init__(self):
         object.__setattr__(self, "files", tuple(
             [File(pathlib.Path(path), self) for path in self.files]))
         object.__setattr__(self, "id", FileSubmission._store[self])
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["File"]:
         return iter(self.files)
 
     @classmethod
@@ -382,16 +399,6 @@ class File:
         return tokens
 
 
-@attr.s(slots=True)
-class Preprocessor:
-    """Hack to ensure that composed preprocessor is serializable by Pickle."""
-    preprocessors = attr.ib()
-
-    def __call__(self, tokens):
-        for preprocessor in self.preprocessors:
-            tokens = preprocessor(tokens)
-        return tokens
-
 
 @attr.s(slots=True, frozen=True, repr=False)
 class Span:
@@ -456,10 +463,10 @@ class Comparison(Generic[SA, SB]):
     ignored_spans: List[Span] = attr.ib(factory=list)
 
 
-T = TypeVar("T", bound=Score)
+S = TypeVar("S", bound=Score)
 
 @attr.s(slots=True)
-class Compare50Result(Generic[T]):
+class Compare50Result(Generic[S]):
     """
     :ivar pass_: the pass that was used to compare the two submissions
     :ivar score: the :class:`compare50.Score` generated when the submissions were scored
@@ -469,7 +476,7 @@ class Compare50Result(Generic[T]):
     The final result of comparing two submissions that is passed to the renderer.
     """
     pass_: Pass = attr.ib()
-    score: T = attr.ib()
+    score: S = attr.ib()
     groups: List["Group"] = attr.ib()
     ignored_spans: List[Span] = attr.ib()
     explanations: Dict[Explainer, List["Explanation"]] = attr.ib(init=False, factory=lambda: defaultdict(list))
@@ -563,7 +570,7 @@ class Token:
         return self.val == other.val and self.type == other.type
 
 
-class BisectList(Sequence):
+class BisectList(collections.abc.Sequence):
     """
     A sorted list allowing for easy binary seaching. This exists because Python's
     bisect does not allow you to compare objects via a key function.

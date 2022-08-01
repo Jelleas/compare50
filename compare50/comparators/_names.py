@@ -54,7 +54,7 @@ class Names(Comparator):
         bar = get_progress_bar()
         bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
 
-        idStore = IdStore()
+        idStore: IdStore[FileSubmission] = IdStore()
         
         # Find all prints of names to ignore.
         ignored_names = self._get_ignored_names(ignored_files, idStore)
@@ -86,7 +86,7 @@ class Names(Comparator):
         scores: List[Score[FileSubmission, FileSubmission]],
         ignored_files: Set[File]
     ) -> List[Comparison[FileSubmission, FileSubmission]]:
-        idStore = IdStore()
+        idStore: IdStore[FileSubmission] = IdStore()
         comparisons: List[Comparison] = []
 
         # Find all prints of names to ignore.
@@ -214,7 +214,7 @@ class Names(Comparator):
         return ignored_names
 
     def _process_tokens(self, submission: FileSubmission, tokens: List[IdentifiableToken]) -> List[IdentifiableToken]:
-        return list(submission.preprocessor(tokens))
+        return list(submission.preprocessor(tokens))  # type: ignore
 
     def _get_unprocessed_tokens(self, file: File, store: IdStore) -> List[IdentifiableToken]:
         file_tokens = file.unprocessed_tokens()

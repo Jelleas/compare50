@@ -14,12 +14,24 @@ import traceback
 import tempfile
 
 from collections import defaultdict
-from typing import Tuple, List, Set, Dict
+from typing import Tuple, List, Set, Dict, TypeVar, Iterable, Callable, Union
 
 import lib50
 import termcolor
 
-from . import comparators, Compare50Result, Pass, FileSubmission, File, Explanation, _api, _data, _renderer, __version__ # type: ignore
+from . import (
+    comparators,
+    Compare50Result,
+    Pass,
+    Preprocessor,
+    FileSubmission,
+    File,
+    Explanation,
+    _api,
+    _data,
+    _renderer,
+    __version__
+)
 
 
 def excepthook(cls, exc, tb):
@@ -46,10 +58,10 @@ def excepthook(cls, exc, tb):
 excepthook.verbose = True # type: ignore
 sys.excepthook = excepthook
 
-
-def partition(vals, pred):
-    true = set()
-    false = set()
+T = TypeVar("T")
+def partition(vals: Iterable[T], pred: Callable[[T], bool]) -> Tuple[Set[T], Set[T]]:
+    true: Set[T] = set()
+    false: Set[T] = set()
     for val in vals:
         (true if pred(val) else false).add(val)
     return true, false
@@ -61,15 +73,20 @@ class SubmissionFactory:
         self.patterns = []
         self.submissions = {}
 
-    def include(self, pattern) -> None:
+    def include(self, pattern: str) -> None:
         pattern = lib50.config.TaggedValue(pattern, "include")
         self.patterns.append(pattern)
 
-    def exclude(self, pattern) -> None:
+    def exclude(self, pattern: str) -> None:
         pattern = lib50.config.TaggedValue(pattern, "exclude")
         self.patterns.append(pattern)
 
-    def _get(self, path, preprocessor, is_archive=False) -> FileSubmission:
+    def _get(
+        self,
+        path: Union[str, pathlib.Path],
+        preprocessor: Preprocessor,
+        is_archive: bool=False
+    ) -> FileSubmission:
         path = pathlib.Path(path)
 
         # Ask lib50 which file(s) in path should be included
@@ -410,6 +427,10 @@ def main():
         with _api.init_progress_bar(f"Scoring ({passes[0].__name__})", disable=args.debug) as bar:
             # Cross compare and rank all submissions, keep only top `n`
             scores = _api.rank(subs, archive_subs, ignored_files, passes[0], n=args.n)
+
+        # If there are no scores, exit
+        if len(scores) == 0:
+            raise _api.Error("Found no matches for these submissions.")
 
         # Compare the matches
         pass_to_results: Dict[Pass, List[Compare50Result]] = {}

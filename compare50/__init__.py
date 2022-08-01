@@ -1,3 +1,5 @@
+__version__: str
+
 def _set_version():
     """Set check50 __version__"""
     global __version__

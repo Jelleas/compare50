@@ -31,15 +31,20 @@ class Misspellings(Comparator):
         sub_to_words = {sub: self._misspelled(*sub) - ignored_words for sub in submissions}
 
         # For each pair of submissions, assign a score based upon number of misspelled words
-        scores = [Score(sub_a, sub_b, _intersect_size(words_a, words_b))
-                    for (sub_a, words_a), (sub_b, words_b) in itertools.combinations(sub_to_words.items(), r=2)]
+        scores: List[Score] = []
+        for (sub_a, words_a), (sub_b, words_b) in itertools.combinations(sub_to_words.items(), r=2):
+            points = _intersect_size(words_a, words_b)
+            if points > 0:
+                scores.append(Score(sub_a, sub_b, points))
 
         # Compare each archive submission against each regular submission
         for archive_sub in archive_submissions:
             # Find all misspelled words in archive
             archive_words = self._misspelled(*archive_sub) - ignored_words
-            scores.extend(Score(sub, archive_sub, _intersect_size(words, archive_words))
-                            for sub, words in sub_to_words.items())
+            for sub, words in sub_to_words.items():
+                points = _intersect_size(words, archive_words)
+                if points > 0:
+                    scores.append(Score(sub, archive_sub, points))
 
         return scores
 
