@@ -19,7 +19,7 @@ from typing import Tuple, List, Set, Dict
 import lib50
 import termcolor
 
-from . import comparators, Compare50Result, Pass, Submission, FileSubmission, File, Explanation, _api, _data, _renderer, __version__ # type: ignore
+from . import comparators, Compare50Result, Pass, FileSubmission, File, Explanation, _api, _data, _renderer, __version__ # type: ignore
 
 
 def excepthook(cls, exc, tb):
@@ -407,7 +407,7 @@ def main():
             raise _api.Error("At least two non-empty submissions are required for a comparison.")
 
         # Rank the submissions
-        with _api.progress_bar(f"Scoring ({passes[0].__name__})", disable=args.debug) as bar:
+        with _api.init_progress_bar(f"Scoring ({passes[0].__name__})", disable=args.debug) as bar:
             # Cross compare and rank all submissions, keep only top `n`
             scores = _api.rank(subs, archive_subs, ignored_files, passes[0], n=args.n)
 
@@ -417,7 +417,7 @@ def main():
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
             # Get the matching spans, group them per submission
-            with _api.progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
+            with _api.init_progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
                 pass_to_results[pass_] = _api.compare(scores, ignored_files, pass_)
 
         # Explain the results
@@ -425,7 +425,7 @@ def main():
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
             for explainer in pass_.explainers:
-                with _api.progress_bar(f"Explaining ({explainer.name}) for ({pass_.__name__})", disable=args.debug):
+                with _api.init_progress_bar(f"Explaining ({explainer.name}) for ({pass_.__name__})", disable=args.debug):
                     results = pass_to_results[pass_]
                     
                     explanations: List[Explanation] = explainer.explain(
@@ -448,7 +448,7 @@ def main():
                             result.add_explanation(explanation)
 
         # Render the results
-        with _api.progress_bar("Rendering", disable=args.debug):
+        with _api.init_progress_bar("Rendering", disable=args.debug):
             index = _renderer.render(pass_to_results, dest=args.output)
 
     termcolor.cprint(
@@ -467,7 +467,7 @@ def load(
 
     # Collect all submissions, archive submissions and distro files
     total = len(args.submissions) + len(args.archive) + len(args.distro)
-    with _api.progress_bar("Preparing", total=total, disable=args.debug) as bar:
+    with _api.init_progress_bar("Preparing", total=total, disable=args.debug) as bar:
         subs = list(submission_factory.get_all(args.submissions, preprocessor))
         archive_subs = list(submission_factory.get_all(args.archive, preprocessor, is_archive=True))
         ignored_subs = list(submission_factory.get_all(args.distro, preprocessor))

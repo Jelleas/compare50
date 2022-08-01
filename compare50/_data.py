@@ -456,8 +456,10 @@ class Comparison(Generic[SA, SB]):
     ignored_spans: List[Span] = attr.ib(factory=list)
 
 
+T = TypeVar("T", bound=Score)
+
 @attr.s(slots=True)
-class Compare50Result:
+class Compare50Result(Generic[T]):
     """
     :ivar pass_: the pass that was used to compare the two submissions
     :ivar score: the :class:`compare50.Score` generated when the submissions were scored
@@ -467,7 +469,7 @@ class Compare50Result:
     The final result of comparing two submissions that is passed to the renderer.
     """
     pass_: Pass = attr.ib()
-    score: Score = attr.ib()
+    score: T = attr.ib()
     groups: List["Group"] = attr.ib()
     ignored_spans: List[Span] = attr.ib()
     explanations: Dict[Explainer, List["Explanation"]] = attr.ib(init=False, factory=lambda: defaultdict(list))
