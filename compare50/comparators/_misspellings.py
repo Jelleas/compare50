@@ -2,11 +2,11 @@ import collections
 import contextlib
 import itertools
 
-from typing import List, Tuple
+from typing import List, Set
 
 import attr
 
-from .. import Comparator, Span, File, Comparison, Score, Fingerprint, SourcedFingerprint
+from .. import Comparator, FileSubmission, Span, File, Comparison, Score, Fingerprint, SourcedFingerprint
 
 
 class Misspellings(Comparator):
@@ -18,7 +18,12 @@ class Misspellings(Comparator):
         """Returns a set containing all of the words in each file that are not in the dictionary"""
         return set().union(*({tok.val for tok in file.tokens() if tok.val not in self.dictionary} for file in files))
 
-    def score(self, submissions, archive_submissions, ignored_files):
+    def score(
+        self, 
+        submissions: List[FileSubmission],
+        archive_submissions: List[FileSubmission],
+        ignored_files: Set[File]
+    ) -> List[Score[FileSubmission, FileSubmission]]:
         """Number of identically misspelled words."""
         ignored_words = self._misspelled(*ignored_files)
 
@@ -38,7 +43,11 @@ class Misspellings(Comparator):
 
         return scores
 
-    def compare(self, scores, ignored_files):
+    def compare(
+        self,
+        scores: List[Score[FileSubmission, FileSubmission]],
+        ignored_files: Set[File]
+    ) -> List[Comparison[FileSubmission, FileSubmission]]:
         ignored_words = self._misspelled(*ignored_files)
 
         # Get all unique submissions to compare
@@ -48,10 +57,10 @@ class Misspellings(Comparator):
         spellcheck_results = {file: self._spellcheck(file, ignored_words)
                                 for sub in subs
                                     for file in sub}
-        comparisons = []
+        comparisons: List[Comparison[FileSubmission, FileSubmission]] = []
         for score in scores:
             span_matches = []
-            ignored_spans = set()
+            ignored_spans: Set[Span] = set()
             for file_a, file_b in itertools.product(score.sub_a.files, score.sub_b.files):
                 results_a, results_b = spellcheck_results[file_a], spellcheck_results[file_b]
 

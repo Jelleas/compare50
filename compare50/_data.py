@@ -1,6 +1,6 @@
 
 import typing
-from typing import List, Set, Dict, Tuple, Type, Callable, Union
+from typing import List, Set, Dict, Tuple, Type, Callable, TypeVar, Union, Generic
 
 import abc
 from collections.abc import Mapping, Sequence
@@ -94,7 +94,12 @@ class Comparator(metaclass=abc.ABCMeta):
     should be scored and compared.
     """
     @abc.abstractmethod
-    def score(self, submissions, archive_submissions, ignored_files):
+    def score(
+        self,
+        submissions: List["FileSubmission"],
+        archive_submissions: List["FileSubmission"],
+        ignored_files: Set["File"]
+    ) -> List["Score[FileSubmission, FileSubmission]"]:
         """
         Given a list of submissions, a list of archive submissions, and a set of distro
         files, return a list of :class:`compare50.Score`\ s for each submission pair.
@@ -102,7 +107,11 @@ class Comparator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def compare(self, scores, ignored_files):
+    def compare(
+        self,
+        scores: List["Score[FileSubmission, FileSubmission]"],
+        ignored_files: Set["File"]
+    ) -> List["Comparison[FileSubmission, FileSubmission]"]:
         """
         Given a list of scores and a list of distro files, perform an in-depth
         comparison of each submission pair and return a corresponding list of
@@ -116,12 +125,13 @@ class ServerComparator(Comparator):
     An extended comparator that is capable of ranking FingerprintSubmissions.
     In other words, submissions that are composed of fingerprints only and not directories and files.
     """
+    @abc.abstractmethod
     def score_fingerprints(
-        self, 
+        self,
         submissions: List["FingerprintSubmission"], 
-        archive_submissions: List["FingerprintSubmission"],
+        archive: List["FingerprintSubmission"], 
         ignored: Set["Fingerprint"]
-    ):
+    ) -> List["Score[FingerprintSubmission, FingerprintSubmission]"]:
         pass
 
     @abc.abstractmethod
@@ -407,8 +417,28 @@ class Span:
         return self.file.read()[self.start:self.end]
 
 
+SA = TypeVar("SA", bound=Submission)
+SB = TypeVar("SB", bound=Submission)
+
 @attr.s(slots=True)
-class Comparison:
+class Score(Generic[SA, SB]):
+    """
+    :ivar sub_a: the first submission
+    :ivar sub_b: the second submission
+    :ivar score: a number indicating the similarity between ``sub_a`` and ``sub_b``\
+            (higher meaning more similar)
+
+    A score representing the similarity of two submissions.
+    """
+    sub_a: SA = attr.ib(cmp=False)
+    sub_b: SB = attr.ib(cmp=False)
+
+    # Preferable we'd use Number here, but type checking fails: https://github.com/python/mypy/issues/3186
+    score: Union[int, float] = attr.ib(default=0)
+
+
+@attr.s(slots=True)
+class Comparison(Generic[SA, SB]):
     """
     :ivar sub_a: the first submission
     :ivar sub_b: the second submission
@@ -420,27 +450,11 @@ class Comparison:
 
     Represents an in-depth comparison of two submissions.
     """
-    sub_a = attr.ib(validator=attr.validators.instance_of(Submission))
-    sub_b = attr.ib(validator=attr.validators.instance_of(Submission))
-    span_matches = attr.ib(factory=list)
-    ignored_spans = attr.ib(factory=list)
+    sub_a: SA = attr.ib()
+    sub_b: SB = attr.ib()
+    span_matches: List[Tuple[Span, Span]] = attr.ib(factory=list)
+    ignored_spans: List[Span] = attr.ib(factory=list)
 
-
-@attr.s(slots=True)
-class Score:
-    """
-    :ivar sub_a: the first submission
-    :ivar sub_b: the second submission
-    :ivar score: a number indicating the similarity between ``sub_a`` and ``sub_b``\
-            (higher meaning more similar)
-
-    A score representing the similarity of two submissions.
-    """
-    sub_a = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
-    sub_b = attr.ib(validator=attr.validators.instance_of(Submission), cmp=False)
-
-    # Remove ignore once https://github.com/python/mypy/issues/3186 is fixed
-    score: numbers.Number = attr.ib(default=0, validator=attr.validators.instance_of(numbers.Number)) # type: ignore
 
 @attr.s(slots=True)
 class Compare50Result:

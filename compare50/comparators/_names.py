@@ -10,7 +10,7 @@ from .. import (
     get_progress_bar
 )
 
-from typing import List, Set, Dict, Tuple, Sequence, FrozenSet
+from typing import List, Set, Dict, Tuple, Iterable, FrozenSet
 
 import collections
 import itertools
@@ -45,7 +45,12 @@ class Names(Comparator):
     def __init__(self):
         pass
 
-    def score(self, submissions, archive_submissions, ignored_files):
+    def score(
+        self,
+        submissions: List[FileSubmission],
+        archive_submissions: List[FileSubmission],
+        ignored_files: Set[File]
+    ) -> List[Score[FileSubmission, FileSubmission]]:
         bar = get_progress_bar()
         bar.reset(total=math.ceil((len(submissions) + len(archive_submissions)) / 0.9))
 
@@ -76,7 +81,11 @@ class Names(Comparator):
 
         return scores
 
-    def compare(self, scores, ignored_files):
+    def compare(
+        self,
+        scores: List[Score[FileSubmission, FileSubmission]],
+        ignored_files: Set[File]
+    ) -> List[Comparison[FileSubmission, FileSubmission]]:
         idStore = IdStore()
         comparisons: List[Comparison] = []
 
@@ -90,7 +99,7 @@ class Names(Comparator):
             submissions.add(score.sub_b)
 
         # Find all uncompared_spans, those are spans that dont contain names.
-        sub_to_uncompared_spans: Dict[FileSubmission, List[IdentifiableToken]] = {}
+        sub_to_uncompared_spans: Dict[FileSubmission, List[Span]] = {}
         for sub in submissions:
             unprocessed_tokens: List[IdentifiableToken] = []
             for file in sub.files:
@@ -128,8 +137,8 @@ class Names(Comparator):
 
     def _filter_ignored_names(
         self,
-        names: Sequence[FingerprintedName],
-        ignored_names: Sequence[FingerprintedName]
+        names: Iterable[FingerprintedName],
+        ignored_names: Iterable[FingerprintedName]
     ) -> Tuple[List[FingerprintedName], List[FingerprintedName]]:
         new_names: List[FingerprintedName] = []
         new_ignored_names: List[FingerprintedName] = []
@@ -167,7 +176,7 @@ class Names(Comparator):
         self,
         submission: FileSubmission,
         store: IdStore,
-        files: Sequence[File]=(),
+        files: Iterable[File]=(),
     ) -> List[FingerprintedName]:
         if not files:
             files = submission.files
@@ -197,7 +206,7 @@ class Names(Comparator):
 
         return names
 
-    def _get_ignored_names(self, ignored_files: Sequence[File], store: IdStore) -> List[FingerprintedName]:
+    def _get_ignored_names(self, ignored_files: Iterable[File], store: IdStore) -> List[FingerprintedName]:
         ignored_names: List[FingerprintedName] = []
         for file in ignored_files:
             names = self._get_names(file.submission, store, files=[file])

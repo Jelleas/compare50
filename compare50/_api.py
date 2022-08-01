@@ -38,7 +38,7 @@ def rank(
     ignored_files: Set[File], 
     pass_: Pass, 
     n: int=50
-) -> List[Score]:
+) -> List[Score[FileSubmission, FileSubmission]]:
     """
     :param submissions: submissions to be ranked
     :type submissions: [:class:`compare50.FileSubmission`]
@@ -68,7 +68,7 @@ def rank_fingerprints(
     ignored: Set[Fingerprint], 
     comparator: ServerComparator, 
     n: int=50
-) -> List[Score]:
+) -> List[Score[FingerprintSubmission, FingerprintSubmission]]:
     """
     :param submission: submission to be ranked
     :type submissions: [:class:`compare50.Fingerprint`]
@@ -95,7 +95,7 @@ def rank_fingerprints(
  
 
 def compare(
-    scores: List[Score], 
+    scores: List[Score[FileSubmission, FileSubmission]], 
     ignored_files: Set[File], 
     pass_: Pass
 ) -> List[Compare50Result]:
