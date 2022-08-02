@@ -1,9 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 function Logo(props) {
+    const navigate = useNavigate();
     return (
         <div
-            onClick={() => (window.location.href = "home.html")}
+            onClick={() => navigate("/")}
             style={{
                 fontWeight: "bold",
                 width: "100%",

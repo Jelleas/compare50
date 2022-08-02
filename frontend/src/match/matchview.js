@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import "./matchview.css";
 
@@ -12,26 +12,30 @@ import API from "../api";
 import { useParams } from "react-router-dom";
 
 function MatchView() {
-    const getData = () => {
+    const getData = (index) => {
         setIsLoaded(null);
-        Promise.all([API.getMatch(), API.getGraph()]).then(([match, graph]) => {
-            setGraph(graph);
-            dispatchSimilarities({
-                type: "set",
-                payload: { match: match, pass: match.passes[0] },
-            });
-            setIsLoaded(true);
-        });
+        setLoadedIndex(index);
+        Promise.all([API.getMatch(index), API.getGraph()]).then(
+            ([match, graph]) => {
+                setGraph(graph);
+                dispatchSimilarities({
+                    type: "set",
+                    payload: { match: match, pass: match.passes[0] },
+                });
+                setIsLoaded(true);
+            }
+        );
     };
+
+    const { id } = useParams();
+    const index = parseInt(id.match(/\d/g).join(""));
 
     const [settings, setSetting] = useSettings();
 
     const [isLoaded, setIsLoaded] = useState(false);
+    const [loadedIndex, setLoadedIndex] = useState(index);
 
     const [graphData, setGraph] = useState({});
-
-    let { id } = useParams();
-    id = id.match(/\d/g).join("");
 
     const placeHolderMatch = API.placeHolderMatch();
     const [similarities, dispatchSimilarities] = useSimilarities(
@@ -39,8 +43,8 @@ function MatchView() {
         placeHolderMatch.passes[0]
     );
 
-    if (isLoaded === false) {
-        getData();
+    if (isLoaded === false || loadedIndex !== index) {
+        getData(index);
     }
 
     return (

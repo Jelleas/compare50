@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import * as serviceWorker from "./serviceWorker";
 
@@ -12,22 +12,22 @@ if (process.env.REACT_APP_BUILD_TARGET === "home") {
 } else if (process.env.REACT_APP_BUILD_TARGET === "match") {
     const MatchView = require("./match/matchview").default;
     BuildTarget = <MatchView />;
-} else if (process.env.REACT_APP_BUILD_TARGET === "server") {
+} else if (process.env.REACT_APP_BUILD_TARGET === "bundle") {
     const Home = require("./home/home").default;
     const MatchView = require("./match/matchview").default;
 
     BuildTarget = (
-        <BrowserRouter>
+        <MemoryRouter>
             <Routes>
                 <Route path="/" element={<Home />}></Route>
-                <Route path="/home.html" element={<Home />}></Route>
+                <Route path="/index.html" element={<Home />}></Route>
                 <Route path="/match:id" element={<MatchView />}></Route>
             </Routes>
-        </BrowserRouter>
+        </MemoryRouter>
     );
 } else {
     throw new Error(
-        `Env var REACT_APP_BUILD_TARGET is not set to either 'home', 'match' or 'server'`
+        `Env var REACT_APP_BUILD_TARGET is not set to either 'home', 'match' or 'bundle'`
     );
 }
 

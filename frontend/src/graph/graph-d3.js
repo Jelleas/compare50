@@ -160,6 +160,11 @@ class D3Graph {
             return Math.max(this.props.width, MIN_WIDTH);
         }
 
+        // if element hasnt loaded yet, go with 100 as a default
+        if (el === null) {
+            return 100;
+        }
+
         // calculate width of provided (likely, parent) element
         const style = getComputedStyle(el);
         return Math.max(
@@ -176,6 +181,11 @@ class D3Graph {
         // if we're given a static height, use it
         if (this.props.height !== null && this.props.height !== undefined) {
             return Math.max(this.props.height, MIN_HEIGHT);
+        }
+
+        // if element hasnt loaded yet, go with 100 as a default
+        if (el === null) {
+            return 100;
         }
 
         // calculate height of provided (likely, parent) element

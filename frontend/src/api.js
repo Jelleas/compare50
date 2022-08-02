@@ -25,7 +25,7 @@ class API {
         );
     }
 
-    static async getMatch() {
+    static async getMatch(index) {
         // In development use mock data
         if (IN_DEVELOPMENT) {
             return await Promise.all([
@@ -55,12 +55,10 @@ class API {
         }
 
         // In production use static data attached to the window by compare50
-        return new Match(
-            window.COMPARE50.SUB_A,
-            window.COMPARE50.SUB_B,
-            window.COMPARE50.PASSES,
-            window.COMPARE50.METADATA
-        );
+        const { SUB_A, SUB_B, PASSES, METADATA } =
+            window.COMPARE50.MATCHES[index];
+
+        return new Match(SUB_A, SUB_B, PASSES, METADATA);
     }
 
     static async getGraph() {

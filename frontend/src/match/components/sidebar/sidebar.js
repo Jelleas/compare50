@@ -8,6 +8,7 @@ import render50 from "../../render50";
 import "../../matchview.css";
 import "./sidebar.css";
 import { SettingsContext } from "../../hooks/useSettings";
+import { useNavigate, useHref } from "react-router-dom";
 
 function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
     const style = {
@@ -205,6 +206,10 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
 }
 
 function MatchNavigation({ current, n }) {
+    const navigate = useNavigate();
+    let nextHref = useHref("../match_" + (current + 1) + ".html");
+    const prevHref = useHref("../match_" + (current - 1) + ".html");
+
     return (
         <div>
             <div
@@ -227,10 +232,7 @@ function MatchNavigation({ current, n }) {
                     <button
                         type="button"
                         style={{ width: "50%" }}
-                        onClick={() =>
-                            (window.location.href =
-                                "match_" + (current - 1) + ".html")
-                        }
+                        onClick={() => navigate(prevHref, { replace: true })}
                         disabled={current === 1}
                     >
                         {"<<"}
@@ -240,10 +242,7 @@ function MatchNavigation({ current, n }) {
                     <button
                         type="button"
                         style={{ width: "50%" }}
-                        onClick={() =>
-                            (window.location.href =
-                                "match_" + (current + 1) + ".html")
-                        }
+                        onClick={() => navigate(nextHref)}
                         disabled={current === n}
                     >
                         {">>"}
