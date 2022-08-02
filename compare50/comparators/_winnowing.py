@@ -3,7 +3,7 @@ import collections
 import itertools
 import math
 import sys
-from typing import List
+from typing import Counter, List, Tuple, Dict, Optional
 import farmhash
 
 import typing
@@ -12,11 +12,11 @@ from typing import List, Set
 import attr
 import numpy as np
 
-from .. import _api, Comparison, Comparator, File, Span, Score, Fingerprint, SourcedFingerprint
+from .. import _api, Comparison, ServerComparator, File, Span, Score, Fingerprint, Token, SourcedFingerprint
 from .._data import FileSubmission, FingerprintSubmission
 
 
-class Winnowing(Comparator):
+class Winnowing(ServerComparator):
     """ Comparator utilizing the (robust) Winnowing algorithm as described https://theory.stanford.edu/~aiken/publications/papers/sigmod03.pdf
 
     :param t: the guarantee threshold; any matching sequence of tokens of length at least t is guaranteed to be matched
@@ -27,26 +27,30 @@ class Winnowing(Comparator):
 
     __slots__ = ["k", "t"]
 
-    def __init__(self, k, t):
+    def __init__(self, k: int, t: int):
         self.k = k
         self.t = t
 
-
-    def score(self, submissions, archive_submissions, ignored_files):
+    def score(
+        self,
+        submissions: List[FileSubmission],
+        archive_submissions: List[FileSubmission],
+        ignored_files: Set[File]
+    ) -> List[Score[FileSubmission, FileSubmission]]:
         """Number of matching k-grams."""
-        def files(subs):
+        def get_files(subs: List[FileSubmission]) -> List[File]:
             return [f for sub in subs for f in sub]
 
         submission_index = ScoreIndex(self.k, self.t)
         archive_index = ScoreIndex(self.k, self.t)
         ignored_index = ScoreIndex(self.k, self.t)
 
-        submission_files = files(submissions)
-        archive_files = files(archive_submissions)
+        submission_files = get_files(submissions)
+        archive_files = get_files(archive_submissions)
 
         bar = _api.get_progress_bar()
         bar.reset(total=math.ceil((len(submission_files) + len(archive_files) + len(ignored_files)) / 0.9))
-        frequency_map = collections.Counter()
+        frequency_map: Counter[int] = collections.Counter()
         with _api.Executor() as executor:
             # Subs and archive subs
             for index, files in ((submission_index, submission_files), (archive_index, archive_files)):
@@ -55,9 +59,10 @@ class Winnowing(Comparator):
                         frequency_map[hash_] += 1
                     index.include_all(idx)
                     bar.update()
+                    
             # Ignored files
             for idx in executor.map(self._index_file(ScoreIndex, (self.k, self.t)), ignored_files):
-                index.include_all(idx)
+                ignored_index.include_all(idx)
                 bar.update()
 
         submission_index.ignore_all(ignored_index)
@@ -69,11 +74,12 @@ class Winnowing(Comparator):
         N = len(submissions) + len(archive_submissions)
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])))
 
-    def score_fingerprints(self,
+    def score_fingerprints(
+        self,
         submissions: List[FingerprintSubmission], 
         archive: List[FingerprintSubmission], 
         ignored: Set[Fingerprint]
-    ) -> List[Score]:
+    ) -> List[Score[FingerprintSubmission, FingerprintSubmission]]:
 
         submission_index = ScoreIndex(self.k, self.t)
         archive_index = ScoreIndex(self.k, self.t)
@@ -81,19 +87,19 @@ class Winnowing(Comparator):
 
         frequency_map: typing.Counter[SourcedFingerprint] = collections.Counter()
         submitter_fingerprints = collections.defaultdict(set)
-        with _api.Executor() as executor:
-            for submission in submissions:
-                for fingerprint in submission.fingerprints:
-                    submission_index.include_fingerprint(fingerprint)
-                    submitter_fingerprints[submission.submitter].add(fingerprint)
+        
+        for submission in submissions:
+            for fingerprint in submission.fingerprints:
+                submission_index.include_fingerprint(fingerprint)
+                submitter_fingerprints[submission.submitter].add(fingerprint)
 
-            for archive_submission in archive:
-                for fingerprint in archive_submission.fingerprints:
-                    archive_index.include_fingerprint(fingerprint)
-                    submitter_fingerprints[archive_submission.submitter].add(fingerprint)
+        for archive_submission in archive:
+            for fingerprint in archive_submission.fingerprints:
+                archive_index.include_fingerprint(fingerprint)
+                submitter_fingerprints[archive_submission.submitter].add(fingerprint)
 
-            for fingerprint in ignored:
-                ignored_index.include_fingerprint(fingerprint)
+        for fingerprint in ignored:
+            ignored_index.include_fingerprint(fingerprint)
 
         for fingerprints in submitter_fingerprints.values():
             for fingerprint in fingerprints:
@@ -108,7 +114,11 @@ class Winnowing(Comparator):
         N = len(submitter_fingerprints)
         return submission_index.compare(archive_index, score=lambda h: 1 + math.log(N / (1 + frequency_map[h])), store=FingerprintSubmission)
 
-    def compare(self, scores, ignored_files):
+    def compare(
+        self,
+        scores: List[Score[FileSubmission, FileSubmission]],
+        ignored_files: Set[File]
+    ) -> List[Comparison[FileSubmission, FileSubmission]]:
         bar = _api.get_progress_bar()
         bar.reset(total=len(scores) if scores else 1)
         if not scores:
@@ -131,10 +141,10 @@ class Winnowing(Comparator):
         class FileCache:
             # List of tokens (and their corresponding indices) that can be matched.
             # Name is slightly misleading since it is a list of (token, index) pairs
-            unignored_tokens = attr.ib(factory=list)
-            ignored_spans = attr.ib(factory=list)
+            unignored_tokens: List[Tuple[List[Token], CompareIndex]] = attr.ib(factory=list)
+            ignored_spans: List[Span] = attr.ib(factory=list)
 
-        file_cache = {}
+        file_cache: Dict[File, FileCache] = {}
         for sub in subs:
             for file in sub:
                 file_tokens = file.tokens()
@@ -153,18 +163,19 @@ class Winnowing(Comparator):
                                                          processed_tokens=list(itertools.chain.from_iterable(token_lists)))
                 file_cache[file] = cache
 
-        comparisons = []
+        comparisons: List[Comparison] = []
         for score in scores:
+            sub_a, sub_b = score.sub_a, score.sub_b
             ignored_spans = set()
             span_matches = []
 
             # We already have the ignored spans for every file cached, so we just need to get the list
             # for each file in this submission pair.
-            for file in itertools.chain(score.sub_a.files, score.sub_b.files):
+            for file in itertools.chain(sub_a.files, sub_b.files):
                 ignored_spans.update(file_cache[file].ignored_spans)
 
             # Compare each pair of files in the submission pair
-            for file_a, file_b in itertools.product(score.sub_a.files, score.sub_b.files):
+            for file_a, file_b in itertools.product(sub_a.files, sub_b.files):
                 cache_a = file_cache[file_a]
                 cache_b = file_cache[file_b]
                 # For each pair of unignored regions in the file pair, find the matching spans
@@ -172,7 +183,7 @@ class Winnowing(Comparator):
                 for (tokens_a, index_a), (tokens_b, index_b) in itertools.product(cache_a.unignored_tokens, cache_b.unignored_tokens):
                     span_matches += _api.expand(index_a.compare(index_b), tokens_a, tokens_b)
 
-            comparisons.append(Comparison(score.sub_a, score.sub_b, span_matches, list(ignored_spans)))
+            comparisons.append(Comparison(sub_a, sub_b, span_matches, list(ignored_spans)))
             bar.update()
 
         return comparisons
@@ -432,7 +443,7 @@ class CompareIndex(Index):
 
         return matches
 
-    def unignored_tokens(self, file, tokens=None):
+    def unignored_tokens(self, file: File, tokens: Optional[List[Token]]=None) -> List[List[Token]]:
         if tokens is None:
             tokens = file.tokens()
 
@@ -457,8 +468,8 @@ class CompareIndex(Index):
             return [tokens]
 
         # Find relevant tokens (any token not completely in an ignored_span)
-        relevant_token_lists = []
-        relevant_tokens = []
+        relevant_token_lists: List[List[Token]] = []
+        relevant_tokens: List[Token] = []
         span_iter = iter(sorted(ignored_spans, key=lambda span: span.start))
         span = next(span_iter)
         for i, token in enumerate(tokens):

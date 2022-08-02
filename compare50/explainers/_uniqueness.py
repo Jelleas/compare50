@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Union
 import math
 
-from .. import Comparator, Explainer, Explanation, Compare50Result, Span, FileSubmission, File, Fingerprint, SourcedFingerprint
+from .. import ServerComparator, Error, Comparator, Explainer, Explanation, Compare50Result, Span, FileSubmission, File, SourcedFingerprint
 from .. import get_progress_bar
 
 class Index:
-    def __init__(self, comparator: Comparator):
+    def __init__(self, comparator: ServerComparator):
         self.comparator = comparator
         self._index: Dict[SourcedFingerprint, List[SourcedFingerprint]] = defaultdict(list)
 
@@ -59,12 +59,15 @@ class Uniqueness(Explainer):
 
     def explain(
         self, 
-        comparator: Comparator,
+        comparator: Union[Comparator, ServerComparator],
         results: List[Compare50Result], 
         submissions: List[FileSubmission], 
         archive_submissions: List[FileSubmission], 
         ignored_files: Set[File]
     ) -> List[Explanation]:
+        if not isinstance(comparator, ServerComparator):
+            raise Error("Uniqueness explainer needs a ServerComparator, please update your pass.")
+
         progress_bar = get_progress_bar()
         progress_bar.reset(total=100)        
         

@@ -20,7 +20,7 @@ class TestSubmissionFactory(TestCase):
     def setUp(self):
         super().setUp()
         self.factory = main.SubmissionFactory()
-        api.progress_bar("foo", disable=True).__enter__()
+        api.init_progress_bar("foo", disable=True).__enter__()
 
     def tearDown(self):
         super().tearDown()

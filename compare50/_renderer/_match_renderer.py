@@ -5,15 +5,15 @@ from typing import List, Dict
 from ._renderer import STATIC, TEMPLATES
 from .._data import IdStore
 
-from .. import FileSubmission, Compare50Result, File, Span, Compare50Result, Explanation
+from .. import FileSubmission, Compare50Result, File, Span, Compare50Result, Explanation, Group
 from ._cluster import Cluster
 
 def render_match(sub_a: FileSubmission, sub_b: FileSubmission, results: List[Compare50Result], cluster: Cluster, metadata: Dict) -> str:
     files_a = files_as_dict(sub_a)
     files_b = files_as_dict(sub_b)
 
-    span_id_store = IdStore()
-    group_id_store = IdStore()
+    span_id_store: IdStore[Span] = IdStore()
+    group_id_store: IdStore[Group] = IdStore()
 
     passes = [pass_as_dict(result, span_id_store, group_id_store) for result in results]
 

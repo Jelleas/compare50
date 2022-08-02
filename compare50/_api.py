@@ -1,5 +1,5 @@
 
-from typing import List, Set, Union
+from typing import List, Set, Tuple, Dict, Optional, Any, Iterable, Union
 
 import collections
 import heapq
@@ -13,6 +13,7 @@ from ._data import (
     FingerprintSubmission,
     Pass,
     Span,
+    Token,
     Score, 
     File,
     Group,
@@ -24,54 +25,12 @@ from ._data import (
 )
 
 
-__all__ = ["rank", "compare", "missing_spans", "expand", "progress_bar", "get_progress_bar", "Error"]
+__all__ = ["rank", "compare", "missing_spans", "expand", "init_progress_bar", "get_progress_bar", "Error"]
 
 
 class Error(Exception):
     """Base class for compare50 errors."""
     pass
-
-
-def fingerprint_for_compare(
-    submissions: List[FileSubmission],
-    pass_: Pass
-) -> List[List[SourcedFingerprint]]:
-    """
-    :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.FileSubmission`]
-    :param pass_: pass whose comparator should be use to fingerprint the submissions
-    :type pass_: :class:`compare50.Pass`
-   
-    Fingerprint submissions
-    """
-    all_fingerprints: List[List[SourcedFingerprint]] = []
-    for submission in submissions:
-        fps: List[SourcedFingerprint] = []
-        for file in submission.files:
-            fps.extend(pass_.comparator.fingerprint_for_compare(file))
-        all_fingerprints.append(fps)
-    return all_fingerprints
-
-
-def fingerprint_for_score(
-    submissions: List[FileSubmission],
-    pass_: Pass
-) -> List[List[Fingerprint]]:
-    """
-    :param submissions: submissions to be fingerprinted
-    :type submissions: [:class:`compare50.FileSubmission`]
-    :param pass_: pass whose comparator should be use to fingerprint the submissions
-    :type pass_: :class:`compare50.Pass`
-
-    Fingerprint submissions
-    """
-    all_fingerprints: List[List[Fingerprint]] = []
-    for submission in submissions:
-        fps: List[Fingerprint] = []
-        for file in submission.files:
-            fps.extend(pass_.comparator.fingerprint_for_score(file))
-        all_fingerprints.append(fps)
-    return all_fingerprints
 
 
 def rank(
@@ -80,7 +39,7 @@ def rank(
     ignored_files: Set[File], 
     pass_: Pass, 
     n: int=50
-) -> List[Score]:
+) -> List[Score[FileSubmission, FileSubmission]]:
     """
     :param submissions: submissions to be ranked
     :type submissions: [:class:`compare50.FileSubmission`]
@@ -110,7 +69,7 @@ def rank_fingerprints(
     ignored: Set[Fingerprint], 
     comparator: ServerComparator, 
     n: int=50
-) -> List[Score]:
+) -> List[Score[FingerprintSubmission, FingerprintSubmission]]:
     """
     :param submission: submission to be ranked
     :type submissions: [:class:`compare50.Fingerprint`]
@@ -137,10 +96,10 @@ def rank_fingerprints(
  
 
 def compare(
-    scores: List[Score], 
+    scores: List[Score[FileSubmission, FileSubmission]], 
     ignored_files: Union[Set[File], Set[Fingerprint]],
     pass_: Pass
-) -> List[Compare50Result]:
+) -> List[Compare50Result[Score[FileSubmission, FileSubmission]]]:
     """
     :param scores: Scored submission pairs to be compared more granularly
     :type scores: [:class:`compare50.Score`]
@@ -156,16 +115,17 @@ def compare(
     list of :class:`compare50.compare50Result`\ s.
     """
 
-    missing_spans_cache = {}
-    sub_match_to_ignored_spans = {}
-    sub_match_to_groups = {}
+
+    missing_spans_cache: Dict[File, List[Span]] = {}
+    sub_match_to_ignored_spans: Dict[Tuple[FileSubmission, FileSubmission], List[Span]] = {}
+    sub_match_to_groups: Dict[Tuple[FileSubmission, FileSubmission], List[Group]] = {}
 
     compare_func = pass_.comparator.compare
     if ignored_files and isinstance(next(iter(ignored_files)), Fingerprint):
         compare_func = pass_.comparator.compare_fingerprints
 
-    for comparison in compare_func(scores, ignored_files):
-        new_ignored_spans = []
+    for comparison in compare_func.compare(scores, ignored_files):
+        new_ignored_spans: List[Span] = []
         for sub in (comparison.sub_a, comparison.sub_b):
             for file in sub.files:
                 # Divide ignored_spans per file
@@ -184,7 +144,7 @@ def compare(
 
         sub_match_to_groups[(comparison.sub_a, comparison.sub_b)] = _group_span_matches(comparison.span_matches)
 
-    results = []
+    results: List[Compare50Result[Score[FileSubmission, FileSubmission]]] = []
     for score in scores:
         sub_match = (score.sub_a, score.sub_b)
         results.append(Compare50Result(pass_,
@@ -195,7 +155,53 @@ def compare(
     return results
 
 
-def missing_spans(file, original_tokens=None, processed_tokens=None):
+def fingerprint_for_compare(
+    submissions: List[FileSubmission],
+    comparator: ServerComparator
+) -> List[List[SourcedFingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.FileSubmission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+   
+    Fingerprint submissions
+    """
+    all_fingerprints: List[List[SourcedFingerprint]] = []
+    for submission in submissions:
+        fps: List[SourcedFingerprint] = []
+        for file in submission.files:
+            fps.extend(comparator.fingerprint_for_compare(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
+
+
+def fingerprint_for_score(
+    submissions: List[FileSubmission],
+    comparator: ServerComparator
+) -> List[List[Fingerprint]]:
+    """
+    :param submissions: submissions to be fingerprinted
+    :type submissions: [:class:`compare50.FileSubmission`]
+    :param pass_: pass whose comparator should be use to fingerprint the submissions
+    :type pass_: :class:`compare50.Pass`
+
+    Fingerprint submissions
+    """
+    all_fingerprints: List[List[Fingerprint]] = []
+    for submission in submissions:
+        fps: List[Fingerprint] = []
+        for file in submission.files:
+            fps.extend(comparator.fingerprint_for_score(file))
+        all_fingerprints.append(fps)
+    return all_fingerprints
+
+
+def missing_spans(
+    file: File,
+    original_tokens: Optional[List[Token]]=None,
+    processed_tokens: Optional[List[Token]]=None
+) -> List[Span]:
     """
     :param file: file to be examined
     :type file: :class:`compare50.File`
@@ -236,7 +242,11 @@ def missing_spans(file, original_tokens=None, processed_tokens=None):
     return spans
 
 
-def expand(span_matches, tokens_a, tokens_b):
+def expand(
+    span_matches: List[Tuple[Span, Span]],
+    tokens_a: List[Token],
+    tokens_b: List[Token]
+) -> List[Tuple[Span, Span]]:
     """
     :param span_matches: span pairs to be expanded wherein the first element of every \
             pair is from the same file and the second element of every pair is from the \
@@ -259,11 +269,11 @@ def expand(span_matches, tokens_a, tokens_b):
     if not span_matches:
         return span_matches
 
-    expanded_span_matches = set()
+    expanded_span_matches: Set[Tuple[Span, Span]] = set()
 
     # Keep a list of tokens, sorted by the start (BisectList facilitates binary search)
-    tokens_a = BisectList.from_sorted(tokens_a, key=lambda tok: tok.start)
-    tokens_b = BisectList.from_sorted(tokens_b, key=lambda tok: tok.start)
+    tokens_a_bisect = BisectList.from_sorted(tokens_a, key=lambda tok: tok.start)
+    tokens_b_bisect = BisectList.from_sorted(tokens_b, key=lambda tok: tok.start)
 
     # Keep track of the intervals of the file covered by spans so that we can
     # avoid expanding span pairs that are already subsumed
@@ -274,7 +284,7 @@ def expand(span_matches, tokens_a, tokens_b):
     # start expanding the earliest span first.
     span_matches = sorted(span_matches, key=lambda match: (match[0].start, match[1].start))
 
-    def is_subsumed(span, tree):
+    def is_subsumed(span: Span, tree: intervaltree.IntervalTree) -> bool:
         """Determine if span is contained by any interval in the tree.
         Assumes that tree contains no intersecting intervals"""
         intervals = tree[span.start:span.end]
@@ -284,17 +294,17 @@ def expand(span_matches, tokens_a, tokens_b):
         return False
 
 
-    def _expand_side(cursor_a, cursor_b, step):
+    def _expand_side(cursor_a: int, cursor_b: int, step: int) -> Tuple[int, int]:
         """One-sided expansion. Given the start/end indices of a span pair,
         expand token-wise moving along the list of tokens according to ``step``.
 
         Returns a pair of indices corresponding to the new tokens"""
 
-        tok_idx_a = tokens_a.bisect_key_right(cursor_a) - 2
-        tok_idx_b = tokens_b.bisect_key_right(cursor_b) - 2
+        tok_idx_a = tokens_a_bisect.bisect_key_right(cursor_a) - 2
+        tok_idx_b = tokens_b_bisect.bisect_key_right(cursor_b) - 2
 
         try:
-            while min(tok_idx_a, tok_idx_b) >= 0 and tokens_a[tok_idx_a] == tokens_b[tok_idx_b]:
+            while min(tok_idx_a, tok_idx_b) >= 0 and tokens_a_bisect[tok_idx_a] == tokens_b_bisect[tok_idx_b]:
                 tok_idx_a += step
                 tok_idx_b += step
         except IndexError:
@@ -316,8 +326,8 @@ def expand(span_matches, tokens_a, tokens_b):
         # Expand right
         end_a, end_b = _expand_side(span_a.end, span_b.end, 1)
 
-        new_span_a = Span(span_a.file, tokens_a[start_a].start, tokens_a[end_a].end)
-        new_span_b = Span(span_b.file, tokens_b[start_b].start, tokens_b[end_b].end)
+        new_span_a = Span(span_a.file, tokens_a_bisect[start_a].start, tokens_a_bisect[end_a].end)
+        new_span_b = Span(span_b.file, tokens_b_bisect[start_b].start, tokens_b_bisect[end_b].end)
 
         span_tree_a.addi(new_span_a.start, new_span_a.end)
         span_tree_b.addi(new_span_b.start, new_span_b.end)
@@ -329,7 +339,7 @@ def expand(span_matches, tokens_a, tokens_b):
     return list(expanded_span_matches)
 
 
-def _flatten_spans(spans):
+def _flatten_spans(spans: List[Span]) -> List[Span]:
     """
     Flatten a collection of spans.
     The resulting list of spans covers the same area and has no overlapping spans.
@@ -340,7 +350,7 @@ def _flatten_spans(spans):
     spans = sorted(spans, key=lambda span: span.start)
     file = spans[0].file
 
-    flattened_spans = []
+    flattened_spans: List[Span] = []
     start = spans[0].start
     cur = spans[0]
     for i in range(len(spans) - 1):
@@ -355,7 +365,7 @@ def _flatten_spans(spans):
     return flattened_spans
 
 
-def _group_span_matches(span_matches):
+def _group_span_matches(span_matches: List[Tuple[Span, Span]]) -> List[Group]:
     """
     Transforms a list of span pairs into a list of Groups.
     Finds all spans that share the same content, and groups them in one Group.
@@ -368,7 +378,7 @@ def _group_span_matches(span_matches):
     return _filter_subsumed_groups([Group(spans) for spans in span_groups])
 
 
-def _transitive_closure(connections):
+def _transitive_closure(connections: List[Tuple[Any, Any]]) -> List[List[Any]]:
     class Graph:
         def __init__(self):
             self.connections = collections.defaultdict(set)
@@ -403,14 +413,14 @@ def _transitive_closure(connections):
     return trans_closure
 
 
-def _is_span_subsumed(span, other_spans):
+def _is_span_subsumed(span: Span, other_spans: Iterable[Span]) -> bool:
     for other_span in other_spans:
         if span.start >= other_span.start and span.end <= other_span.end:
             return True
     return False
 
 
-def _is_group_subsumed(group, groups):
+def _is_group_subsumed(group: Group, groups: Iterable[Group]) -> bool:
     for other_group in groups:
         if other_group == group or len(other_group.spans) < len(group.spans):
             continue
@@ -423,63 +433,62 @@ def _is_group_subsumed(group, groups):
     return False
 
 
-def _filter_subsumed_groups(groups):
+def _filter_subsumed_groups(groups: Iterable[Group]) -> List[Group]:
     return [g for g in groups if not _is_group_subsumed(g, groups)]
 
 
 class _ProgressBar:
-    def __init__(self, msg="", total=100, disable=False, **kwargs):
+    def __init__(self, msg: str="", total: float=100, disable: bool=False, **kwargs):
         self.msg = msg
         self.disable = disable
         if not disable:
             self._bar = tqdm.tqdm(total=total, dynamic_ncols=True, bar_format="{l_bar}{bar}|[{elapsed} {remaining}s]", **kwargs)
             self._bar.write(msg)
         else:
-            self._n = 0
+            self._n: float = 0
             self._total = total
 
     @property
-    def n(self):
+    def n(self) -> float:
         try:
             return self._bar.n
         except AttributeError:
             return self._n
 
     @property
-    def total(self):
+    def total(self) -> float:
         try:
             return self._bar.total
         except AttributeError:
             return self._n
 
-    def reset(self, total=100):
+    def reset(self, total: float=100) -> None:
         try:
             self._bar.reset(total=total)
         except AttributeError:
             self._n = 0
             self._total = total
 
-    def update(self, amount=1):
+    def update(self, amount: float=1) -> None:
         try:
             self._bar.update(amount)
         except AttributeError:
             self._n += amount
 
-    def close(self, leave=True):
+    def close(self, leave: bool=True) -> None:
         try:
             self._bar.close(leave)
         except AttributeError:
             pass
 
-
-    def __enter__(self):
+    def __enter__(self) -> tqdm.tqdm:
         try:
             self._bar.__enter__()
         except AttributeError:
             pass
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.update(self.total - self.n)
         try:
             self._bar.__exit__(exc_type, exc_val, exc_tb)
@@ -490,13 +499,13 @@ class _ProgressBar:
 _progress_bar = _ProgressBar(disable=True)
 
 
-def progress_bar(*args, **kwargs):
+def init_progress_bar(*args, **kwargs) -> _ProgressBar:
     global _progress_bar
     _progress_bar = _ProgressBar(*args, **kwargs)
     return _progress_bar
 
 
-def get_progress_bar():
+def get_progress_bar() -> _ProgressBar:
     return _progress_bar
 
 
