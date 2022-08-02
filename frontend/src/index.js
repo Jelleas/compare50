@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import * as serviceWorker from "./serviceWorker";
 
@@ -17,13 +17,13 @@ if (process.env.REACT_APP_BUILD_TARGET === "home") {
     const MatchView = require("./match/matchview").default;
 
     BuildTarget = (
-        <MemoryRouter>
+        <HashRouter>
             <Routes>
                 <Route path="/" element={<Home />}></Route>
                 <Route path="/index.html" element={<Home />}></Route>
                 <Route path="/match:id" element={<MatchView />}></Route>
             </Routes>
-        </MemoryRouter>
+        </HashRouter>
     );
 } else {
     throw new Error(

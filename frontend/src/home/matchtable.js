@@ -1,5 +1,5 @@
 import React from "react";
-import { useHref, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./table.css";
 
 function ArchiveImg() {
@@ -93,8 +93,8 @@ function MatchTableRow({
 
     const roundedScore = Math.round(score * 10) / 10;
 
-    const href = useHref("match_" + index + ".html");
     const navigate = useNavigate();
+    const href = "match_" + index + ".html";
 
     return (
         <tr
