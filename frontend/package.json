@@ -12,6 +12,7 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-helmet": "^6.1.0",
+    "react-router-dom": "^6.3.0",
     "react-scripts": "3.4.1",
     "react-split": "2.0.9",
     "react-tooltip": "^4.2.21",

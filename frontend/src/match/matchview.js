@@ -9,6 +9,7 @@ import useSimilarities from "./hooks/useSimilarities";
 import useSettings, { SettingsContext } from "./hooks/useSettings";
 
 import API from "../api";
+import { useParams } from "react-router-dom";
 
 function MatchView() {
     const getData = () => {
@@ -28,6 +29,9 @@ function MatchView() {
     const [isLoaded, setIsLoaded] = useState(false);
 
     const [graphData, setGraph] = useState({});
+
+    let { id } = useParams();
+    id = id.match(/\d/g).join("");
 
     const placeHolderMatch = API.placeHolderMatch();
     const [similarities, dispatchSimilarities] = useSimilarities(

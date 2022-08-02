@@ -359,6 +359,9 @@ def main():
                         metavar="MATCHES",
                         type=int,
                         help="number of matches to output")
+    parser.add_argument("--bundled",
+                        action="store_true",
+                        help="bundle all output in one file")
     parser.add_argument("--max-file-size",
                         action="store",
                         default=1024,
@@ -470,7 +473,7 @@ def main():
 
         # Render the results
         with _api.init_progress_bar("Rendering", disable=args.debug):
-            index = _renderer.render(pass_to_results, dest=args.output)
+            index = _renderer.render(pass_to_results, dest=args.output, bundled=args.bundled)
 
     termcolor.cprint(
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")

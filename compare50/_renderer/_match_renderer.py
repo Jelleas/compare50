@@ -8,7 +8,13 @@ from .._data import IdStore
 from .. import FileSubmission, Compare50Result, File, Span, Compare50Result, Explanation, Group
 from ._cluster import Cluster
 
-def render_match(sub_a: FileSubmission, sub_b: FileSubmission, results: List[Compare50Result], cluster: Cluster, metadata: Dict) -> str:
+def get_match_data(
+    sub_a: FileSubmission,
+    sub_b: FileSubmission,
+    results: List[Compare50Result],
+    cluster: Cluster,
+    metadata: Dict
+) -> str:
     files_a = files_as_dict(sub_a)
     files_b = files_as_dict(sub_b)
 
@@ -17,23 +23,25 @@ def render_match(sub_a: FileSubmission, sub_b: FileSubmission, results: List[Com
 
     passes = [pass_as_dict(result, span_id_store, group_id_store) for result in results]
 
-    with open(TEMPLATES / "match.html") as f:
-        template = jinja2.Template(f.read(), autoescape=jinja2.select_autoescape(enabled_extensions=("html",)))
+    # with open(TEMPLATES / "match.html") as f:
+    #     template = jinja2.Template(f.read(), autoescape=jinja2.select_autoescape(enabled_extensions=("html",)))
 
-    with open(STATIC / "match.html") as f:
-        match_page = f.read()
+    match_data = {
+        "METADATA": metadata,
+        "SUB_A": files_a,
+        "SUB_B": files_b,
+        "PASSES": passes,
+        "SUBMISSIONS": cluster.submissions_as_dict(),
+        "LINKS": cluster.links_as_dict()
+    }
+
+    return match_data
 
     rendered_data = template.render(
-        match_page=match_page,
-        METADATA=metadata,
-        FILES_A=files_a, 
-        FILES_B=files_b, 
-        PASSES=passes, 
-        SUBMISSIONS=cluster.submissions_as_dict(), 
-        LINKS=cluster.links_as_dict()
+        matches = {}
     )
 
-    return rendered_data + "\n" + match_page
+    return rendered_data
 
 
 def file_as_dict(file: File) -> Dict:
