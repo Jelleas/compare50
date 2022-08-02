@@ -124,7 +124,7 @@ def compare(
     if ignored_files and isinstance(next(iter(ignored_files)), Fingerprint):
         compare_func = pass_.comparator.compare_fingerprints
 
-    for comparison in compare_func.compare(scores, ignored_files):
+    for comparison in compare_func(scores, ignored_files):
         new_ignored_spans: List[Span] = []
         for sub in (comparison.sub_a, comparison.sub_b):
             for file in sub.files:
