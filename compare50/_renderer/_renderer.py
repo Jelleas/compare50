@@ -37,10 +37,8 @@ def render(
     cluster = Cluster(sub_pair_to_results)
     progress_bar.update(20)
 
-    # Create the directory if it does not yet exist
-    dest.mkdir(exist_ok=True)
-
-    return render_multi(sub_pair_to_results, cluster, dest)
+    renderer = render_bundled if bundled else render_multi
+    return renderer(sub_pair_to_results, cluster, dest)
 
 
 def render_multi(
@@ -49,6 +47,9 @@ def render_multi(
     dest: pathlib.Path
 ) -> str:
     progress_bar = _api.get_progress_bar()
+
+    # Create the directory if it does not yet exist
+    dest.mkdir(exist_ok=True)
 
     # Render matches
     for i, ((sub_a, sub_b), results) in enumerate(sub_pair_to_results.items()):
@@ -63,9 +64,9 @@ def render_multi(
 
         match_data = get_match_data(sub_a, sub_b, results, subcluster, metadata)
 
-        # match = _render_page({"matches": {index: match_data}}, "match.html")
+        match = _render_page({"MATCHES": {index: match_data}}, "match.html")
 
-        match = _render_page(match_data, "match.html")
+        # match = _render_page(match_data, "match.html")
 
         with open(dest / f"match_{index}.html", "w") as f:
             f.write(match)
@@ -110,14 +111,12 @@ def render_bundled(
     # Render home page
     home_data = get_home_data(cluster)
 
-    data = {
-        "matches": matches_data 
-        **home_data,
-    }
+    data = dict(home_data)
+    data.update({"MATCHES": matches_data})
 
     page = _render_page(data, "bundle.html")
 
-    home_path = dest / "index.html"
+    home_path = dest if dest.suffix.lower() == ".html" else dest.parent / (dest.name + '.html')
     with open(home_path, "w") as f:
         f.write(page)
 
@@ -128,9 +127,9 @@ def _render_page(data: Any, filename: str) -> str:
     with open(TEMPLATES / "page.html") as f:
         template = jinja2.Template(f.read(), autoescape=jinja2.select_autoescape(enabled_extensions=("html",)))
     rendered_data = template.render(DATA=data)
-
     with open(STATIC / filename) as f:
         page = f.read()
+    
     return f"{rendered_data}\n{page}"
 
 
