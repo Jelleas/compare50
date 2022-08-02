@@ -133,6 +133,16 @@ class ServerComparator(Comparator):
         pass
 
 
+    @abc.abstractmethod
+    def compare_fingerprints(self, scores, ignored_fingerprints):
+        """
+        Given a list of scores and a list of distro files, perform an in-depth
+        comparison of each submission pair and return a corresponding list of
+        :class:`compare50.Comparison`\ s
+        """
+        pass
+
+
 class Explainer(metaclass=abc.ABCMeta):
     @property
     @abc.abstractmethod

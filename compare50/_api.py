@@ -1,5 +1,5 @@
 
-from typing import List, Set
+from typing import List, Set, Union
 
 import collections
 import heapq
@@ -138,7 +138,7 @@ def rank_fingerprints(
 
 def compare(
     scores: List[Score], 
-    ignored_files: Set[File], 
+    ignored_files: Union[Set[File], Set[Fingerprint]],
     pass_: Pass
 ) -> List[Compare50Result]:
     """
@@ -160,7 +160,11 @@ def compare(
     sub_match_to_ignored_spans = {}
     sub_match_to_groups = {}
 
-    for comparison in pass_.comparator.compare(scores, ignored_files):
+    compare_func = pass_.comparator.compare
+    if ignored_files and isinstance(next(iter(ignored_files)), Fingerprint):
+        compare_func = pass_.comparator.compare_fingerprints
+
+    for comparison in compare_func(scores, ignored_files):
         new_ignored_spans = []
         for sub in (comparison.sub_a, comparison.sub_b):
             for file in sub.files:

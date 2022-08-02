@@ -177,6 +177,73 @@ class Winnowing(Comparator):
 
         return comparisons
 
+    def compare_fingerprints(self, scores, ignored_fingerprints):
+        if not scores:
+            return []
+
+        # Create index of ignored_files
+        ignored_index = CompareIndex(self.k)
+        for fingerprint in ignored_fingerprints:
+            ignored_index.include_fingerprint(fingerprint)
+
+        # Find all unique submissions
+        subs = set()
+        for s in scores:
+            subs.add(s.sub_a)
+            subs.add(s.sub_b)
+
+        # TODO: Rename me
+        # Basically a named tuple of information we need to keep around for each file
+        @attr.s(slots=True)
+        class FileCache:
+            # List of tokens (and their corresponding indices) that can be matched.
+            # Name is slightly misleading since it is a list of (token, index) pairs
+            unignored_tokens = attr.ib(factory=list)
+            ignored_spans = attr.ib(factory=list)
+
+        file_cache = {}
+        for sub in subs:
+            for file in sub:
+                file_tokens = file.tokens()
+                cache = FileCache()
+
+                # Get list of unignored tokens
+                token_lists = ignored_index.unignored_tokens(file, tokens=file_tokens)
+
+                # Index each stretch of unignored tokens, index and add to the cache
+                for token_list in token_lists:
+                    index = CompareIndex(self.k)
+                    index.include(file, tokens=token_list)
+                    cache.unignored_tokens.append((token_list, index))
+
+                cache.ignored_spans = _api.missing_spans(file,
+                                                         original_tokens=file_tokens,
+                                                         processed_tokens=list(itertools.chain.from_iterable(token_lists)))
+                file_cache[file] = cache
+
+        comparisons = []
+        for score in scores:
+            ignored_spans = set()
+            span_matches = []
+
+            # We already have the ignored spans for every file cached, so we just need to get the list
+            # for each file in this submission pair.
+            for file in itertools.chain(score.sub_a.files, score.sub_b.files):
+                ignored_spans.update(file_cache[file].ignored_spans)
+
+            # Compare each pair of files in the submission pair
+            for file_a, file_b in itertools.product(score.sub_a.files, score.sub_b.files):
+                cache_a = file_cache[file_a]
+                cache_b = file_cache[file_b]
+                # For each pair of unignored regions in the file pair, find the matching spans
+                # (by comparing their indices) and expand them as much as possible
+                for (tokens_a, index_a), (tokens_b, index_b) in itertools.product(cache_a.unignored_tokens, cache_b.unignored_tokens):
+                    span_matches += _api.expand(index_a.compare(index_b), tokens_a, tokens_b)
+
+            comparisons.append(Comparison(score.sub_a, score.sub_b, span_matches, list(ignored_spans)))
+
+        return comparisons
+
     def fingerprint_for_compare(self, file: File) -> List[SourcedFingerprint]:
         return [SourcedFingerprint(*fp) for fp in CompareIndex(self.k).fingerprint(file)]
 
@@ -220,7 +287,7 @@ class Index(abc.ABC):
 
     def include_fingerprint(self, fingerprint:Fingerprint):
         """Add a fingerprint to the index."""
-        self._index[fingerprint].add(fingerprint.submission_id)
+        self._index[fingerprint.value].add(fingerprint.submission_id)
 
     def include_all(self, other):
         """Add all fingerprints from another index into this one."""
@@ -380,6 +447,7 @@ class CompareIndex(Index):
         # Figure out spans (regions) of the file to ignore
         # Note: these can overlap!
         ignored_spans = []
+
         for hash, spans in file_index._index.items():
             if hash in self._index:
                 ignored_spans.extend(spans)
