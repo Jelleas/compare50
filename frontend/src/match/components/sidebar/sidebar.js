@@ -28,7 +28,7 @@ function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
                 effect="solid"
                 id="sidebar-tooltip"
             />
-            <div className="column-box">
+            <div className="column-box" style={{ width: "9em" }}>
                 <div className="row auto">
                     <Logo height="2.5em" />
                 </div>
