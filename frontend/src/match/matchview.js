@@ -12,9 +12,22 @@ import API from "../api";
 import useMatchIndex from "./hooks/useMatchIndex";
 
 function MatchView() {
-    const getData = (index) => {
+    const index = useMatchIndex();
+
+    const [settings, setSetting] = useSettings();
+
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const [graphData, setGraph] = useState({});
+
+    const placeHolderMatch = API.placeHolderMatch();
+    const [similarities, dispatchSimilarities] = useSimilarities(
+        placeHolderMatch,
+        placeHolderMatch.passes[0]
+    );
+
+    useEffect(() => {
         setIsLoaded(null);
-        setLoadedIndex(index);
         Promise.all([API.getMatch(index), API.getGraph(index)]).then(
             ([match, graph]) => {
                 setGraph(graph);
@@ -25,26 +38,7 @@ function MatchView() {
                 setIsLoaded(true);
             }
         );
-    };
-
-    const index = useMatchIndex();
-
-    const [settings, setSetting] = useSettings();
-
-    const [isLoaded, setIsLoaded] = useState(false);
-    const [loadedIndex, setLoadedIndex] = useState(index);
-
-    const [graphData, setGraph] = useState({});
-
-    const placeHolderMatch = API.placeHolderMatch();
-    const [similarities, dispatchSimilarities] = useSimilarities(
-        placeHolderMatch,
-        placeHolderMatch.passes[0]
-    );
-
-    if (isLoaded === false || loadedIndex !== index) {
-        getData(index);
-    }
+    }, [index, dispatchSimilarities]);
 
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
