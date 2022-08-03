@@ -27,6 +27,7 @@ function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
                 type="dark"
                 effect="solid"
                 id="sidebar-tooltip"
+                multiline={true}
             />
             <div className="column-box" style={{ width: "9em" }}>
                 <div className="row auto">
@@ -210,6 +211,25 @@ function MatchNavigation({ current, n }) {
     const nextHref = "/match_" + (current + 1) + ".html";
     const prevHref = "/match_" + (current - 1) + ".html";
 
+    const prevRef = useRef(null);
+    const nextRef = useRef(null);
+
+    useEffect(() => {
+        const eventListener = (event) => {
+            if (event.key === "]") {
+                event.preventDefault();
+                nextRef.current.click();
+            } else if (event.key === "[") {
+                event.preventDefault();
+                prevRef.current.click();
+            }
+        };
+
+        document.addEventListener("keyup", eventListener);
+
+        return () => document.removeEventListener("keyup", eventListener);
+    }, []);
+
     return (
         <div>
             <div
@@ -225,7 +245,7 @@ function MatchNavigation({ current, n }) {
             </div>
             <div
                 className="btn-group horizontal"
-                data-tip="Go to the previous and next match"
+                data-tip="Go to the previous and next match<br/>Press [ or ]"
                 data-for="sidebar-tooltip"
             >
                 <span className="btn">
@@ -234,6 +254,7 @@ function MatchNavigation({ current, n }) {
                         style={{ width: "50%" }}
                         onClick={() => navigate(prevHref)}
                         disabled={current === 1}
+                        ref={prevRef}
                     >
                         {"<<"}
                     </button>
@@ -244,6 +265,7 @@ function MatchNavigation({ current, n }) {
                         style={{ width: "50%" }}
                         onClick={() => navigate(nextHref)}
                         disabled={current === n}
+                        ref={nextRef}
                     >
                         {">>"}
                     </button>
@@ -346,7 +368,7 @@ function GroupNavigation({ index, total, gotoNext, gotoPrevious }) {
             <div
                 className="btn-group horizontal"
                 style={{ width: "100%" }}
-                data-tip={`Press Q E`}
+                data-tip={`Press Q or E`}
                 data-for="sidebar-tooltip"
                 data-place="bottom"
             >
