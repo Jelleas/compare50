@@ -274,8 +274,16 @@ function CodeSnippet({
     return (
         <>
             <code className="unselectable" style={style} {...optionalProps}>
-                {alertText + lineNumberText}
+                {alertText}
             </code>
+            {isOnNewLine && (
+                <code
+                    className="unselectable"
+                    style={{ textAlign: "right", color: "black" }}
+                >
+                    {lineNumberText}
+                </code>
+            )}
             <code>{line}</code>
         </>
     );
