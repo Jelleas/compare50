@@ -15,7 +15,7 @@ function MatchView() {
     const getData = (index) => {
         setIsLoaded(null);
         setLoadedIndex(index);
-        Promise.all([API.getMatch(index), API.getGraph()]).then(
+        Promise.all([API.getMatch(index), API.getGraph(index)]).then(
             ([match, graph]) => {
                 setGraph(graph);
                 dispatchSimilarities({

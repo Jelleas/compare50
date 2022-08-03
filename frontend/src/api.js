@@ -61,7 +61,7 @@ class API {
         return new Match(SUB_A, SUB_B, PASSES, METADATA);
     }
 
-    static async getGraph() {
+    static async getGraph(index) {
         // In development use mock data
         if (IN_DEVELOPMENT) {
             return await Promise.all([
@@ -75,11 +75,15 @@ class API {
             });
         }
 
+        if (index == null) {
+            const { LINKS, SUBMISSIONS } = window.COMPARE50;
+            return new Graph(LINKS, SUBMISSIONS).inD3Format();
+        }
+
+        const { LINKS, SUBMISSIONS } = window.COMPARE50.MATCHES[index];
+
         // In production use static data attached to the window by compare50
-        return new Graph(
-            window.COMPARE50.LINKS,
-            window.COMPARE50.SUBMISSIONS
-        ).inD3Format();
+        return new Graph(LINKS, SUBMISSIONS).inD3Format();
     }
 }
 
