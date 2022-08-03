@@ -39,7 +39,7 @@ def clear_all_caches() -> None:
 
 
 class _PassRegistry(abc.ABCMeta):
-    passes: Dict[str, Type] = {}
+    passes: Dict[str, "Pass"] = {}
 
     def __new__(mcls, name, bases, attrs):
         cls = abc.ABCMeta.__new__(mcls, name, bases, attrs)
@@ -50,11 +50,11 @@ class _PassRegistry(abc.ABCMeta):
         return cls
 
     @staticmethod
-    def _get(name: str) -> Type:
+    def _get(name: str) -> "Pass":
         return _PassRegistry.passes[name]
 
     @staticmethod
-    def _get_all() -> List[Type]:
+    def _get_all() -> List["Pass"]:
         return list(_PassRegistry.passes.values())
 
 
@@ -140,7 +140,6 @@ class ServerComparator(Comparator):
     @abc.abstractmethod
     def fingerprint_for_compare(self, file: "File") -> List["SourcedFingerprint"]:
         pass
-
 
     @abc.abstractmethod
     def compare_fingerprints(self, scores, ignored_fingerprints):

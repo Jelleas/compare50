@@ -176,8 +176,7 @@ class IncludeExcludeAction(argparse.Action):
             self.callback(v)
 
 
-PROFILE = [ _api.compare
-          , comparators.Winnowing.score
+PROFILE = [ comparators.Winnowing.score
           , comparators.Winnowing.compare
           , comparators._winnowing.Index.hashes
           , comparators._winnowing.CompareIndex.fingerprint
@@ -440,9 +439,11 @@ def main():
         for pass_ in passes:
             set_preprocessor(pass_, itertools.chain(subs, archive_subs, ignored_subs))
             
-            # Get the matching spans, group them per submission
             with _api.init_progress_bar(f"Comparing ({pass_.__name__})", disable=args.debug):
-                pass_to_results[pass_] = _api.compare(scores, ignored_files, pass_)
+                comparisons = pass_.comparator.compare(scores, ignored_files)
+            
+            # Create Compare50Results for each comparison-score combo
+            pass_to_results[pass_] = _api.get_results(pass_, comparisons, scores)
 
         # Explain the results
         for pass_ in passes:

@@ -20,12 +20,13 @@ from ._data import (
     BisectList,
     Compare50Result,
     Fingerprint,
+    Comparison,
     SourcedFingerprint,
     ServerComparator
 )
 
 
-__all__ = ["rank", "compare", "missing_spans", "expand", "init_progress_bar", "get_progress_bar", "Error"]
+__all__ = ["rank", "get_results", "missing_spans", "expand", "init_progress_bar", "get_progress_bar", "Error"]
 
 
 class Error(Exception):
@@ -95,36 +96,33 @@ def rank_fingerprints(
     return heapq.nlargest(n, scores)
  
 
-def compare(
-    scores: List[Score[FileSubmission, FileSubmission]], 
-    ignored_files: Union[Set[File], Set[Fingerprint]],
-    pass_: Pass
-) -> List[Compare50Result[Score[FileSubmission, FileSubmission]]]:
+def get_results(
+    pass_: Pass,
+    comparisons: Iterable[Comparison],
+    scores: Iterable[Score]
+) -> List[Compare50Result]:
     """
-    :param scores: Scored submission pairs to be compared more granularly
-    :type scores: [:class:`compare50.Score`]
-    :param ignored_files: files containing distro code
-    :type ignored_files: {:class:`compare50.File`}
-    :param pass_: pass whose comparator should be use to compare the submissions
-    :type pass_: :class:`compare50.Pass`
-    :returns: :class:`Compare50Result`\ s corresponding to each of the given scores
+    :param pass_: the pass_ that produced the comparisons and scores
+    :type pass_: [:class:`compare50.Pass`]
+    :param comparisons: an iterable of in-depth comparisons
+    :type comparisons: [:class:`compare50.Comparison`]
+    :param scores: an iterable of scores
+    :type scores: [:class:`compare50.Comparison`]
+    :returns: Compare50Result for each score and comparison pair.
     :rtype: [:class:`compare50.Compare50Result`]
 
 
-    Performs an in-depth comparison of each submission pair and returns a corresponding
-    list of :class:`compare50.compare50Result`\ s.
+    For each pair of comparison and score (same submissions) produce a Compare50Result.
+    Ensures that: 
+    * Spans in the comparison do not overlap.
+    * Any spans in the comparison are extended to maximum matching size.
+    * All spans that were removed by a preprocessor are found again and properly ignored.
     """
-
-
     missing_spans_cache: Dict[File, List[Span]] = {}
     sub_match_to_ignored_spans: Dict[Tuple[FileSubmission, FileSubmission], List[Span]] = {}
     sub_match_to_groups: Dict[Tuple[FileSubmission, FileSubmission], List[Group]] = {}
 
-    compare_func = pass_.comparator.compare
-    if ignored_files and isinstance(next(iter(ignored_files)), Fingerprint):
-        compare_func = pass_.comparator.compare_fingerprints
-
-    for comparison in compare_func(scores, ignored_files):
+    for comparison in comparisons:
         new_ignored_spans: List[Span] = []
         for sub in (comparison.sub_a, comparison.sub_b):
             for file in sub.files:
