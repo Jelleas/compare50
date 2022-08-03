@@ -6,7 +6,7 @@ import pkg_resources
 STATIC = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "static"))
 TEMPLATES = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "templates"))
 
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Tuple, Union, Any
 
 from ._cluster import Cluster
 from .. import _api, Compare50Result, Pass, Explanation, IdStore, Span, FileSubmission, File, Group
@@ -25,7 +25,7 @@ def render(
     dest = pathlib.Path(dest)
 
     # Map each match to its results
-    sub_pair_to_results = collections.defaultdict(list)
+    sub_pair_to_results: Dict[Tuple[FileSubmission, FileSubmission], List[Compare50Result]] = collections.defaultdict(list)
     for results in pass_to_results.values():
         for result in results:
             sub_pair_to_results[(result.sub_a, result.sub_b)].append(result)
@@ -42,10 +42,10 @@ def render(
 
 
 def render_multi(
-    sub_pair_to_results: Dict[Pass, List[Compare50Result]],
+    sub_pair_to_results: Dict[Tuple[FileSubmission, FileSubmission], List[Compare50Result]],
     cluster: Cluster,
     dest: pathlib.Path
-) -> str:
+) -> pathlib.Path:
     progress_bar = _api.get_progress_bar()
 
     # Create the directory if it does not yet exist
@@ -85,10 +85,10 @@ def render_multi(
 
 
 def render_bundled(
-    sub_pair_to_results: Dict[Pass, List[Compare50Result]],
+    sub_pair_to_results: Dict[Tuple[FileSubmission, FileSubmission], List[Compare50Result]],
     cluster: Cluster,
     dest: pathlib.Path
-) -> str:
+) -> pathlib.Path:
     progress_bar = _api.get_progress_bar()
 
     matches_data = {}
@@ -116,7 +116,7 @@ def render_bundled(
 
     page = _render_page(data, "bundle.html")
 
-    home_path = dest if dest.suffix.lower() == ".html" else dest.parent / (dest.name + '.html')
+    home_path = dest if dest.suffix.lower() == ".html" else pathlib.Path(dest.parent / (dest.name + '.html'))
     with open(home_path, "w") as f:
         f.write(page)
 
@@ -133,7 +133,7 @@ def _render_page(data: Any, filename: str) -> str:
     return f"{rendered_data}\n{page}"
 
 
-def get_home_data(cluster: Cluster) -> str:
+def get_home_data(cluster: Cluster) -> Dict[str, Any]:
     return {
         "SUBMISSIONS": cluster.submissions_as_dict(),
         "LINKS": cluster.links_as_dict()
@@ -146,7 +146,7 @@ def get_match_data(
     results: List[Compare50Result],
     cluster: Cluster,
     metadata: Dict
-) -> str:
+) -> Dict[str, Any]:
     files_a = files_as_dict(sub_a)
     files_b = files_as_dict(sub_b)
 
