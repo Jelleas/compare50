@@ -4,7 +4,6 @@ from re import sub
 import pkg_resources
 
 STATIC = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "static"))
-TEMPLATES = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "templates"))
 
 from typing import Dict, List, Tuple, Union, Any
 
@@ -124,8 +123,10 @@ def render_bundled(
 
 
 def _render_page(data: Any, filename: str) -> str:
-    with open(TEMPLATES / "page.html") as f:
-        template = jinja2.Template(f.read(), autoescape=jinja2.select_autoescape(enabled_extensions=("html",)))
+    template = jinja2.Template(
+        "<script>window.COMPARE50 = {{DATA|tojson|safe}}</script>",
+        autoescape=jinja2.select_autoescape(enabled_extensions=("html",))
+    )
     rendered_data = template.render(DATA=data)
     with open(STATIC / filename) as f:
         page = f.read()
