@@ -1,11 +1,11 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import useNavigateToIndex from "./hooks/useNavigateToIndex";
 
 function Logo(props) {
-    const navigate = useNavigate();
+    const navigateToIndex = useNavigateToIndex();
     return (
         <div
-            onClick={() => navigate("/")}
+            onClick={() => navigateToIndex()}
             style={{
                 fontWeight: "bold",
                 width: "100%",

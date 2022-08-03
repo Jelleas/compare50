@@ -9,7 +9,7 @@ import useSimilarities from "./hooks/useSimilarities";
 import useSettings, { SettingsContext } from "./hooks/useSettings";
 
 import API from "../api";
-import { useParams } from "react-router-dom";
+import useMatchIndex from "./hooks/useMatchIndex";
 
 function MatchView() {
     const getData = (index) => {
@@ -27,8 +27,7 @@ function MatchView() {
         );
     };
 
-    const { id } = useParams();
-    const index = parseInt(id.match(/\d/g).join(""));
+    const index = useMatchIndex();
 
     const [settings, setSetting] = useSettings();
 

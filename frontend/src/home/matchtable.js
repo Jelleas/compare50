@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import useNavigateToMatch from "../hooks/useNavigateToMatch";
 import "./table.css";
 
 function ArchiveImg() {
@@ -93,13 +93,12 @@ function MatchTableRow({
 
     const roundedScore = Math.round(score * 10) / 10;
 
-    const navigate = useNavigate();
-    const href = "match_" + index + ".html";
+    const navigateToMatch = useNavigateToMatch();
 
     return (
         <tr
             key={index}
-            onClick={() => navigate(href)}
+            onClick={() => navigateToMatch(index)}
             onMouseEnter={callbacks.mouseenter}
             onMouseLeave={callbacks.mouseleave}
         >

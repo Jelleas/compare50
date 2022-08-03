@@ -20,8 +20,7 @@ if (process.env.REACT_APP_BUILD_TARGET === "home") {
         <HashRouter>
             <Routes>
                 <Route path="/" element={<Home />}></Route>
-                <Route path="/index.html" element={<Home />}></Route>
-                <Route path="/match:id" element={<MatchView />}></Route>
+                <Route path="/match/:id" element={<MatchView />}></Route>
             </Routes>
         </HashRouter>
     );
