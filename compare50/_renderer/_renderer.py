@@ -1,6 +1,5 @@
 import collections
 import pathlib
-from re import sub
 import pkg_resources
 
 STATIC = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "static"))
@@ -64,8 +63,6 @@ def render_multi(
         match_data = get_match_data(sub_a, sub_b, results, subcluster, metadata)
 
         match = _render_page({"MATCHES": {index: match_data}}, "match.html")
-
-        # match = _render_page(match_data, "match.html")
 
         with open(dest / f"match_{index}.html", "w") as f:
             f.write(match)
