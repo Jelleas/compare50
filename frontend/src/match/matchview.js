@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
 import "./matchview.css";
 
@@ -44,16 +44,23 @@ function MatchView() {
 
     const [height, setHeight] = useState(300);
 
+    const fooRef = useRef();
+
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
             <div id="foo">
                 <div
+                    ref={fooRef}
+                    id="foo3"
                     style={{
-                        height: `${height}px`,
                         width: "100%",
                         position: "absolute",
                         zIndex: -1,
                         background: "red",
+                        height:
+                            fooRef.current === undefined
+                                ? "300px"
+                                : fooRef.current.style.height,
                     }}
                 ></div>
                 <div
@@ -83,7 +90,7 @@ function MatchView() {
                         <SplitView
                             similarities={similarities}
                             dispatchSimilarities={dispatchSimilarities}
-                            setHeight={setHeight}
+                            setHeight={fooRef}
                         />
                     </div>
                 </div>

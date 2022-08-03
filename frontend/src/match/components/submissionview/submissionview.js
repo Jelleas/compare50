@@ -109,13 +109,17 @@ function SubmissionView({
                         overflow: "scroll",
                         overscrollBehavior: "auto",
                     }}
-                    onScroll={throttle((event) => {
+                    onScroll={(event) => {
                         console.log(ref.current.scrollTop);
-                        const el = document.querySelector("#foo2");
-                        setHeight(Math.max(0, 300 - ref.current.scrollTop * 2));
-                        el.style.height = `${300 - ref.current.scrollTop}px`;
-                        console.log(el.style.height);
-                    }, 20)}
+                        // const el = document.querySelector("#foo2");
+                        // el.style.height = `${300 - ref.current.scrollTop}px`;
+                        const el2 = document.querySelector("#foo3");
+                        el2.style.height = `${Math.max(
+                            0,
+                            300 - ref.current.scrollTop
+                        )}px`;
+                        // console.log(el.style.height);
+                    }}
                 >
                     <div
                         id="foo2"
