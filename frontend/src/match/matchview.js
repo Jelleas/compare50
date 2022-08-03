@@ -40,29 +40,52 @@ function MatchView() {
         );
     }, [index, dispatchSimilarities]);
 
+    document.body.style.overscrollBehavior = "none";
+
+    const [height, setHeight] = useState(300);
+
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
-            <div className="row-box" style={{ height: "100vh" }}>
-                <div className="row auto" style={{ width: "9em" }}>
-                    <div
-                        className="column-box"
-                        style={{ borderRight: "1px solid #a7adba" }}
-                    >
-                        <div className="row fill">
-                            <SideBar
-                                isLoaded={isLoaded}
-                                similarities={similarities}
-                                dispatchSimilarities={dispatchSimilarities}
-                                graphData={graphData}
-                            />
+            <div id="foo">
+                <div
+                    style={{
+                        height: `${height}px`,
+                        width: "100%",
+                        position: "absolute",
+                        zIndex: -1,
+                        background: "red",
+                    }}
+                ></div>
+                <div
+                    className="row-box"
+                    style={{
+                        height: "100vh",
+                        position: "absolute",
+                        zIndex: 0,
+                    }}
+                >
+                    <div className="row auto" style={{ width: "9em" }}>
+                        <div
+                            className="column-box"
+                            style={{ borderRight: "1px solid #a7adba" }}
+                        >
+                            <div className="row fill">
+                                <SideBar
+                                    isLoaded={isLoaded}
+                                    similarities={similarities}
+                                    dispatchSimilarities={dispatchSimilarities}
+                                    graphData={graphData}
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="row fill">
-                    <SplitView
-                        similarities={similarities}
-                        dispatchSimilarities={dispatchSimilarities}
-                    />
+                    <div className="row fill">
+                        <SplitView
+                            similarities={similarities}
+                            dispatchSimilarities={dispatchSimilarities}
+                            setHeight={setHeight}
+                        />
+                    </div>
                 </div>
             </div>
         </SettingsContext.Provider>
