@@ -10,7 +10,7 @@
 .summary-enter-active {
     opacity: 1;
     max-height: 400px;
-    transition: opacity 600ms, max-height 600ms ease-out;
+    transition: opacity 400ms, max-height 400ms ease-out;
 }
 
 .summary-exit {
@@ -21,7 +21,7 @@
 .summary-exit-active {
     max-height: 0px;
     opacity: 0.5;
-    transition: opacity 600ms, max-height 600ms ease-out;
+    transition: opacity 400ms, max-height 400ms ease-out;
 }
 
 .summary-exit-done {

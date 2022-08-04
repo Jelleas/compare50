@@ -43,7 +43,7 @@ function Summary({ visible, hide, show }) {
         <>
             <CSSTransition
                 in={visible}
-                timeout={600}
+                timeout={400}
                 classNames="summary"
                 nodeRef={ref}
                 style={{ background: "#EEEEEE" }}
