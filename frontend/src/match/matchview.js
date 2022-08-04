@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import "./matchview.css";
 
 import SideBar from "./components/sidebar";
 import SplitView from "./components/splitview";
+import Summary from "./components/summary";
 
 import useSimilarities from "./hooks/useSimilarities";
 import useSettings, { SettingsContext } from "./hooks/useSettings";
@@ -40,6 +41,12 @@ function MatchView() {
         );
     }, [index, dispatchSimilarities]);
 
+    const [isSummaryVisible, setIsSummaryVisible] = useState(true);
+    const hideSummary = useCallback(
+        () => setIsSummaryVisible(false),
+        [setIsSummaryVisible]
+    );
+
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
             <div className="row-box" style={{ height: "100vh" }}>
@@ -59,9 +66,11 @@ function MatchView() {
                     </div>
                 </div>
                 <div className="row fill">
+                    <Summary visible={isSummaryVisible} hide={hideSummary} />
                     <SplitView
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
+                        onScroll={() => setIsSummaryVisible(false)}
                     />
                 </div>
             </div>

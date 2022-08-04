@@ -5,7 +5,7 @@ import SubmissionView from "../submissionview";
 
 import "../../matchview.css";
 
-function SplitView({ settings, similarities, dispatchSimilarities }) {
+function SplitView({ similarities, dispatchSimilarities, onScroll }) {
     const [isInteractionBlocked, setIsInteractionBlocked] = useState(false);
     const match = similarities.match;
 
@@ -34,7 +34,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                         setIsInteractionBlocked={setIsInteractionBlocked}
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
-                        settings={settings}
+                        onScroll={onScroll}
                         toolTipPlace={i === 0 ? "right" : "left"}
                     />
                 </div>

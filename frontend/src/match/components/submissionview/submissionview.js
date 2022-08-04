@@ -13,7 +13,7 @@ function SubmissionView({
     setIsInteractionBlocked,
     similarities,
     dispatchSimilarities,
-    settings,
+    onScroll,
     toolTipPlace,
 }) {
     const [fileInView, updateFileVisibility] = useMax();
@@ -61,6 +61,7 @@ function SubmissionView({
                     ref={ref}
                     className="scrollable-side row fill"
                     style={{ overflow: "scroll" }}
+                    onScroll={onScroll}
                 >
                     <div style={{ paddingLeft: ".5em" }}>
                         {files.map((file) => (
@@ -74,7 +75,6 @@ function SubmissionView({
                                     file={file}
                                     similarities={similarities}
                                     dispatchSimilarities={dispatchSimilarities}
-                                    settings={settings}
                                     updateCoverage={(coverage) => {
                                         fileCoverages[file.id] = coverage;
                                         setFileCoverages(fileCoverages);
