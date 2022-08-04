@@ -20,21 +20,46 @@ function useClickOutsideElement(elem, callback) {
 }
 
 function Summary({ visible, hide }) {
-    const contentRef = useRef();
-    useClickOutsideElement(contentRef.current, hide);
+    const ref = useRef();
+    useClickOutsideElement(ref.current, hide);
+
+    const tabRef = useRef();
+
+    useEffect(() => {
+        tabRef.current.style.position = "absolute";
+
+        if (ref.current === null) {
+            return;
+        }
+
+        const rect = ref.current.getBoundingClientRect();
+        tabRef.current.style.left = `${(rect.left + rect.right) / 2}px`;
+    });
 
     return (
-        <CSSTransition
-            in={visible}
-            appear={true}
-            timeout={600}
-            unmountOnExit
-            classNames="summary"
-            nodeRef={contentRef}
-            style={{ background: "red", height: "300px" }}
-        >
-            <div ref={contentRef}>{"hello world"}</div>
-        </CSSTransition>
+        <>
+            <CSSTransition
+                in={visible}
+                timeout={600}
+                classNames="summary"
+                unmountOnExit
+                nodeRef={ref}
+                style={{ background: "red" }}
+            >
+                <div ref={ref} className="summary">
+                    <div className="summaryContent"></div>
+                </div>
+            </CSSTransition>
+            <div
+                style={{
+                    border: "solid 1px black",
+                    width: "100%",
+                    height: "10px",
+                }}
+            >
+                <div ref={tabRef}>Summary</div>
+            </div>
+        </>
     );
 }
 

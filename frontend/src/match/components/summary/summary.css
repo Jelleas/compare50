@@ -1,13 +1,6 @@
-/* .summary-enter,
-.summary-appear {
-    opacity: 0;
+.summary {
+    height: 300px;
 }
-
-.summary-enter-active,
-.summary-appear-active {
-    opacity: 1;
-    transition: opacity 600ms, transform 600ms;
-} */
 
 .summary-exit {
     opacity: 1;
@@ -18,4 +11,8 @@
     max-height: 0px;
     opacity: 0.5;
     transition: opacity 600ms, max-height 600ms ease-out;
+}
+
+.summary-exit-done {
+    height: 10px;
 }

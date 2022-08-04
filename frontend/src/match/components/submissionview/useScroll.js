@@ -4,7 +4,8 @@ function useScroll(
     scrollableDomElement,
     similarities,
     onScrollStart,
-    onScrollEnd
+    onScrollEnd,
+    offset
 ) {
     const didScroll = useRef(false);
 
@@ -33,7 +34,8 @@ function useScroll(
                 domElement,
                 scrollableDomElement,
                 onScrollStart,
-                onScrollEnd
+                onScrollEnd,
+                offset + 200
             );
         },
         [scrollableDomElement, onScrollStart, onScrollEnd]

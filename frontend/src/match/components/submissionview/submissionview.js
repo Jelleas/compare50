@@ -32,13 +32,22 @@ function SubmissionView({
         0
     );
 
-    const ref = useRef(null);
+    const submissionRef = useRef(null);
+
+    // offset scrolling by top of the submission view
+    let top = 0;
+    if (submissionRef.current !== null) {
+        top = submissionRef.current.getBoundingClientRect().top;
+    }
+
+    const contentRef = useRef(null);
 
     const scrollToCallback = useScroll(
-        ref.current,
+        contentRef.current,
         similarities,
         () => setIsInteractionBlocked(true),
-        () => setIsInteractionBlocked(false)
+        () => setIsInteractionBlocked(false),
+        top
     );
 
     return (
@@ -48,7 +57,7 @@ function SubmissionView({
             id={`submission_${submission.id}_tooltip`}
             place={toolTipPlace}
         >
-            <div className="column-box">
+            <div className="column-box" ref={submissionRef}>
                 <div className="row auto">
                     <StatusBar
                         filepath={submission.name}
@@ -58,7 +67,7 @@ function SubmissionView({
                     />
                 </div>
                 <div
-                    ref={ref}
+                    ref={contentRef}
                     className="scrollable-side row fill"
                     style={{ overflow: "scroll" }}
                     onScroll={onScroll}

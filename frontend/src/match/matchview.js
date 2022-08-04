@@ -49,7 +49,7 @@ function MatchView() {
 
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
-            <div className="row-box" style={{ height: "100vh" }}>
+            <div className="row-box" style={{ height: "calc(100vh - 10px)" }}>
                 <div className="row auto" style={{ width: "9em" }}>
                     <div
                         className="column-box"
