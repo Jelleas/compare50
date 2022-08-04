@@ -19,7 +19,7 @@ function useClickOutsideElement(elem, callback) {
     });
 }
 
-function Summary({ visible, hide }) {
+function Summary({ visible, hide, show }) {
     const ref = useRef();
     useClickOutsideElement(ref.current, hide);
 
@@ -32,8 +32,11 @@ function Summary({ visible, hide }) {
             return;
         }
 
-        const rect = ref.current.getBoundingClientRect();
-        tabRef.current.style.left = `${(rect.left + rect.right) / 2}px`;
+        const summaryRect = ref.current.getBoundingClientRect();
+        const tabRect = tabRef.current.getBoundingClientRect();
+        const summaryMiddle = (summaryRect.left + summaryRect.right) / 2;
+        const tabWidth = tabRect.right - tabRect.left;
+        tabRef.current.style.left = `${summaryMiddle - tabWidth / 2}px`;
     });
 
     return (
@@ -42,9 +45,8 @@ function Summary({ visible, hide }) {
                 in={visible}
                 timeout={600}
                 classNames="summary"
-                unmountOnExit
                 nodeRef={ref}
-                style={{ background: "red" }}
+                style={{ background: "#EEEEEE" }}
             >
                 <div ref={ref} className="summary">
                     <div className="summaryContent"></div>
@@ -52,12 +54,24 @@ function Summary({ visible, hide }) {
             </CSSTransition>
             <div
                 style={{
-                    border: "solid 1px black",
+                    background: "#EEEEEE",
+                    border: "solid 1px #EEEEEE",
                     width: "100%",
-                    height: "10px",
+                    height: "7px",
                 }}
+                onClick={show}
             >
-                <div ref={tabRef}>Summary</div>
+                <div
+                    ref={tabRef}
+                    style={{
+                        background: "#EEEEEE",
+                        border: "solid 1px #EEEEEE",
+                        borderRadius: "5px",
+                        align: "center",
+                    }}
+                >
+                    {visible ? "⬆" : "⬇"}
+                </div>
             </div>
         </>
     );

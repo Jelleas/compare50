@@ -42,10 +42,6 @@ function MatchView() {
     }, [index, dispatchSimilarities]);
 
     const [isSummaryVisible, setIsSummaryVisible] = useState(true);
-    const hideSummary = useCallback(
-        () => setIsSummaryVisible(false),
-        [setIsSummaryVisible]
-    );
 
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
@@ -66,7 +62,11 @@ function MatchView() {
                     </div>
                 </div>
                 <div className="row fill">
-                    <Summary visible={isSummaryVisible} hide={hideSummary} />
+                    <Summary
+                        visible={isSummaryVisible}
+                        hide={() => setIsSummaryVisible(false)}
+                        show={() => setIsSummaryVisible(true)}
+                    />
                     <SplitView
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
