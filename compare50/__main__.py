@@ -400,9 +400,11 @@ def main():
     if args.debug or any(not p.parallel for p in passes):
         _api.Executor = _api.FauxExecutor
 
-    if args.output.exists():
+    output_dest = args.output.parent / (args.output.name + '.html') if args.bundled else args.output
+
+    if output_dest:
         try:
-            resp = input(f"File path {termcolor.colored(args.output, None, attrs=['underline'])}"
+            resp = input(f"File path {termcolor.colored(output_dest, None, attrs=['underline'])}"
                           " already exists. Do you want to remove it? [Y/n] ")
         except EOFError:
             resp = "n"
@@ -410,9 +412,9 @@ def main():
 
         if not resp or resp.lower().startswith("y"):
             try:
-                os.remove(args.output)
+                os.remove(output_dest)
             except (IsADirectoryError, PermissionError):
-                shutil.rmtree(args.output)
+                shutil.rmtree(output_dest)
         else:
             print("Quitting...")
             sys.exit(1)
@@ -474,7 +476,7 @@ def main():
 
         # Render the results
         with _api.init_progress_bar("Rendering", disable=args.debug):
-            index = _renderer.render(pass_to_results, dest=args.output, bundled=args.bundled)
+            index = _renderer.render(pass_to_results, dest=output_dest, bundled=args.bundled)
 
     termcolor.cprint(
         f"Done! Visit file://{index.absolute()} in a web browser to see the results.", "green")
