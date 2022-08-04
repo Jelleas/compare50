@@ -1,0 +1,8 @@
+{
+    "name": "names",
+    "docs": "Looks for names with similar usage.",
+    "score": 0,
+    "spans": [],
+    "groups": [],
+    "explainers": []
+}

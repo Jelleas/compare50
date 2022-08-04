@@ -34,6 +34,7 @@ class API {
                 import("./mock_data/pass_structure.json"),
                 import("./mock_data/pass_text.json"),
                 import("./mock_data/pass_exact.json"),
+                import("./mock_data/pass_names.json"),
                 import("./mock_data/match_metadata.json"),
             ]).then(
                 ([
@@ -42,12 +43,13 @@ class API {
                     passStructure,
                     passText,
                     passExact,
+                    passNames,
                     metadata,
                 ]) => {
                     return new Match(
                         subA,
                         subB,
-                        [passStructure, passText, passExact],
+                        [passStructure, passText, passExact, passNames],
                         metadata
                     );
                 }

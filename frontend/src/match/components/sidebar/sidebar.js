@@ -523,6 +523,10 @@ function Switch(props) {
 }
 
 function formatFraction(numerator, denominator) {
+    if (numerator === undefined || denominator === undefined) {
+        return "0/0";
+    }
+
     let nDigits = Math.max(
         numerator.toString().length,
         denominator.toString().length

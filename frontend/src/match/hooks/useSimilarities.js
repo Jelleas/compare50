@@ -234,6 +234,12 @@ function reselect(similarities, selectedSpan) {
 
 function selectNextGroup(similarities) {
     const groupId = similarities.getNextGroupId();
+
+    // If there is no next group, stop
+    if (groupId === undefined || groupId === null) {
+        return;
+    }
+
     const firstSpanIngroup = similarities.spans.find(
         (span) => span.groupId === groupId
     );
@@ -242,6 +248,12 @@ function selectNextGroup(similarities) {
 
 function selectPreviousGroup(similarities) {
     const groupId = similarities.getPreviousGroupId();
+
+    // If there is no previous group, stop
+    if (groupId === undefined || groupId === null) {
+        return;
+    }
+
     const firstSpanIngroup = similarities.spans.find(
         (span) => span.groupId === groupId
     );
