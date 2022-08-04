@@ -114,9 +114,9 @@ function SubmissionView({
                         // const el = document.querySelector("#foo2");
                         // el.style.height = `${300 - ref.current.scrollTop}px`;
                         const el2 = document.querySelector("#foo3");
-                        el2.style.height = `${Math.max(
-                            0,
-                            300 - ref.current.scrollTop
+                        el2.style.top = `${Math.max(
+                            -300,
+                            -ref.current.scrollTop
                         )}px`;
                         // console.log(el.style.height);
                     }}
