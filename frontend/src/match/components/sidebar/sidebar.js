@@ -377,6 +377,7 @@ function GroupNavigation({ index, total, gotoNext, gotoPrevious }) {
                         type="button"
                         style={{ width: "50%" }}
                         onClick={gotoPrevious}
+                        disabled={total === 0}
                     >
                         &lt;
                     </button>
@@ -388,6 +389,7 @@ function GroupNavigation({ index, total, gotoNext, gotoPrevious }) {
                         type="button"
                         style={{ width: "50%" }}
                         onClick={gotoNext}
+                        disabled={total === 0}
                     >
                         &gt;
                     </button>
