@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import "./matchview.css";
 
@@ -42,6 +42,7 @@ function MatchView() {
     }, [index, dispatchSimilarities]);
 
     const [isSummaryVisible, setIsSummaryVisible] = useState(true);
+    const hasScrolledRef = useRef(false);
 
     return (
         <SettingsContext.Provider value={[settings, setSetting]}>
@@ -70,7 +71,13 @@ function MatchView() {
                     <SplitView
                         similarities={similarities}
                         dispatchSimilarities={dispatchSimilarities}
-                        onScroll={() => setIsSummaryVisible(false)}
+                        onScroll={() => {
+                            if (hasScrolledRef.current) {
+                                return;
+                            }
+                            hasScrolledRef.current = true;
+                            setIsSummaryVisible(false);
+                        }}
                     />
                 </div>
             </div>

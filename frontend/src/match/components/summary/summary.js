@@ -39,6 +39,19 @@ function Summary({ visible, hide, show }) {
         tabRef.current.style.left = `${summaryMiddle - tabWidth / 2}px`;
     });
 
+    useEffect(() => {
+        const eventListener = (event) => {
+            if (event.key.toLowerCase() === "s") {
+                event.preventDefault();
+                tabRef.current.click();
+            }
+        };
+
+        document.addEventListener("keyup", eventListener);
+
+        return () => document.removeEventListener("keyup", eventListener);
+    }, []);
+
     return (
         <>
             <CSSTransition
@@ -58,6 +71,7 @@ function Summary({ visible, hide, show }) {
                     border: "solid 1px #EEEEEE",
                     width: "100%",
                     height: "7px",
+                    cursor: "pointer",
                 }}
                 onClick={show}
             >
@@ -69,6 +83,9 @@ function Summary({ visible, hide, show }) {
                         borderRadius: "5px",
                         align: "center",
                     }}
+                    data-tip={`Press S`}
+                    data-for="sidebar-tooltip"
+                    data-place="bottom"
                 >
                     {visible ? "⬆" : "⬇"}
                 </div>
