@@ -56,6 +56,7 @@ function Summary({ visible, hide, show }) {
         <>
             <CSSTransition
                 in={visible}
+                appear={true}
                 timeout={400}
                 classNames="summary"
                 nodeRef={ref}

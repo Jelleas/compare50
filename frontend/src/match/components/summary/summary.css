@@ -1,4 +1,9 @@
 .summary {
+    height: 0px;
+}
+
+.summary-appear-done,
+.summary-appear-active {
     height: 300px;
 }
 
@@ -8,9 +13,14 @@
 }
 
 .summary-enter-active {
+    height: 300px;
     opacity: 1;
     max-height: 400px;
     transition: opacity 400ms, max-height 400ms ease-out;
+}
+
+.summary-enter-done {
+    height: 300px;
 }
 
 .summary-exit {
@@ -19,6 +29,7 @@
 }
 
 .summary-exit-active {
+    height: 300px;
     max-height: 0px;
     opacity: 0.5;
     transition: opacity 400ms, max-height 400ms ease-out;
