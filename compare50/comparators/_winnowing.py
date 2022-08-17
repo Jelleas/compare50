@@ -1,4 +1,5 @@
 import abc
+from ast import Compare
 import collections
 import itertools
 import math
@@ -7,12 +8,12 @@ from typing import Counter, List, Tuple, Dict, Optional
 import farmhash
 
 import typing
-from typing import List, Set
+from typing import List, Set, Iterable
 
 import attr
 import numpy as np
 
-from .. import _api, Comparison, ServerComparator, File, Span, Score, Fingerprint, Token, SourcedFingerprint
+from .. import _api, Comparison, ServerComparator, File, Span, Score, Fingerprint, Token, SourcedFingerprint, SingleSourceComparison
 from .._data import FileSubmission, FingerprintSubmission
 
 
@@ -188,7 +189,12 @@ class Winnowing(ServerComparator):
 
         return comparisons
 
-    def compare_fingerprints(self, scores, ignored_fingerprints):
+
+    def compare_fingerprints(
+        self,
+        scores: List[Score[FileSubmission, FingerprintSubmission]],
+        ignored_fingerprints: Iterable[Fingerprint]
+    ) -> List[SingleSourceComparison]:
         if not scores:
             return []
 
@@ -196,12 +202,6 @@ class Winnowing(ServerComparator):
         ignored_index = CompareIndex(self.k)
         for fingerprint in ignored_fingerprints:
             ignored_index.include_fingerprint(fingerprint)
-
-        # Find all unique submissions
-        subs = set()
-        for s in scores:
-            subs.add(s.sub_a)
-            subs.add(s.sub_b)
 
         # TODO: Rename me
         # Basically a named tuple of information we need to keep around for each file
@@ -212,9 +212,10 @@ class Winnowing(ServerComparator):
             unignored_tokens = attr.ib(factory=list)
             ignored_spans = attr.ib(factory=list)
 
+        # Build a cache for each file submission
         file_cache = {}
-        for sub in subs:
-            for file in sub:
+        for sub in {s.sub_a for s in scores}:
+            for file in sub.files:
                 file_tokens = file.tokens()
                 cache = FileCache()
 
@@ -232,26 +233,38 @@ class Winnowing(ServerComparator):
                                                          processed_tokens=list(itertools.chain.from_iterable(token_lists)))
                 file_cache[file] = cache
 
+        # Build a cache for each fingerprint submission
+        fingerprint_sub_cache = {}
+        for sub in {s.sub_b for s in scores}:
+            index = CompareIndex(self.k)
+            for fp in sub.fingerprints:
+                # TODO: implement include_fingerprint for CompareIndex
+                index.include_fingerprint(fp)
+            fingerprint_sub_cache[sub] = index
+
+        # Compare the submissions
         comparisons = []
         for score in scores:
-            ignored_spans = set()
-            span_matches = []
-
             # We already have the ignored spans for every file cached, so we just need to get the list
             # for each file in this submission pair.
-            for file in itertools.chain(score.sub_a.files, score.sub_b.files):
+            ignored_spans = set()
+            for file in score.sub_a.files:
                 ignored_spans.update(file_cache[file].ignored_spans)
 
-            # Compare each pair of files in the submission pair
-            for file_a, file_b in itertools.product(score.sub_a.files, score.sub_b.files):
-                cache_a = file_cache[file_a]
-                cache_b = file_cache[file_b]
-                # For each pair of unignored regions in the file pair, find the matching spans
-                # (by comparing their indices) and expand them as much as possible
-                for (tokens_a, index_a), (tokens_b, index_b) in itertools.product(cache_a.unignored_tokens, cache_b.unignored_tokens):
-                    span_matches += _api.expand(index_a.compare(index_b), tokens_a, tokens_b)
+            index_b = fingerprint_sub_cache[score.sub_b]
 
-            comparisons.append(Comparison(score.sub_a, score.sub_b, span_matches, list(ignored_spans)))
+            # Compare each file of a with the fingerprint submission (sub_b)
+            spans = []
+            for file in score.sub_a.files:
+                for tokens_a, index_a in file_cache[file].unignored_tokens:
+                    fingerprints_a = {k for k in index_a.keys()}
+                    fingerprints_b = {k.value for k in index_b.keys()}
+                    common_fingerprints = fingerprints_a & fingerprints_b
+                    spans.extend([index_a[fp] for fp in common_fingerprints])
+    
+            comparisons.append(SingleSourceComparison(
+                score.sub_a, score.sub_b, spans, list(ignored_spans)
+            ))
 
         return comparisons
 

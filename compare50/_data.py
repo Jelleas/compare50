@@ -14,7 +14,8 @@ import pygments.lexers
 
 __all__ = ["Pass", "Comparator", "ServerComparator", "Explainer", "Explanation", "File", "FileSubmission",
            "FingerprintSubmission", "Submission", "Span", "Score", "Group", "Compare50Result", "Comparison",
-            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore", "Preprocessor"]
+            "Token", "Fingerprint", "SourcedFingerprint", "clear_all_caches", "IdStore", "Preprocessor",
+            "SingleSourceComparison"]
 
 _caches: List[Tuple[Type, str, Callable]] = []
 
@@ -142,7 +143,11 @@ class ServerComparator(Comparator):
         pass
 
     @abc.abstractmethod
-    def compare_fingerprints(self, scores, ignored_fingerprints):
+    def compare_fingerprints(
+        self,
+        scores: List["Score[FileSubmission, FingerprintSubmission]"],
+        ignored_fingerprints: Iterable["Fingerprint"]
+    ) -> List["Comparison[FileSubmission, FingerprintSubmission]"]:
         """
         Given a list of scores and a list of distro files, perform an in-depth
         comparison of each submission pair and return a corresponding list of
@@ -469,6 +474,14 @@ class Comparison(Generic[SA, SB]):
     sub_a: SA = attr.ib()
     sub_b: SB = attr.ib()
     span_matches: List[Tuple[Span, Span]] = attr.ib(factory=list)
+    ignored_spans: List[Span] = attr.ib(factory=list)
+
+
+@attr.s(slots=True)
+class SingleSourceComparison():
+    sub_a: FileSubmission = attr.ib()
+    sub_b: FingerprintSubmission = attr.ib()
+    matching_spans: List[Span] = attr.ib(factory=list)
     ignored_spans: List[Span] = attr.ib(factory=list)
 
 
