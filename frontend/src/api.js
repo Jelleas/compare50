@@ -5,18 +5,20 @@ const IN_DEVELOPMENT = process.env.NODE_ENV === "development";
 class API {
     static placeHolderMatch() {
         return new Match(
-            {
-                name: "...",
-                files: [],
-                id: -1,
-                isArchive: false,
-            },
-            {
-                name: "...",
-                files: [],
-                id: -2,
-                isArchive: false,
-            },
+            [
+                {
+                    name: "...",
+                    files: [],
+                    id: -1,
+                    isArchive: false,
+                },
+                {
+                    name: "...",
+                    files: [],
+                    id: -2,
+                    isArchive: false,
+                },
+            ],
             [],
             {
                 index: -1,
@@ -47,8 +49,7 @@ class API {
                     metadata,
                 ]) => {
                     return new Match(
-                        subA,
-                        subB,
+                        [subA, subB],
                         [passStructure, passText, passExact, passNames],
                         metadata
                     );
@@ -60,7 +61,12 @@ class API {
         const { SUB_A, SUB_B, PASSES, METADATA } =
             window.COMPARE50.MATCHES[index];
 
-        return new Match(SUB_A, SUB_B, PASSES, METADATA);
+        const subs = [SUB_A];
+        if (SUB_B !== undefined) {
+            subs.push(SUB_B);
+        }
+
+        return new Match(subs, PASSES, METADATA);
     }
 
     static async getGraph(index) {
@@ -90,23 +96,14 @@ class API {
 }
 
 class Match {
-    constructor(subA, subB, passes, metadata) {
-        this.subA = subA;
-        this.subB = subB;
+    constructor(subs, passes, metadata) {
+        this.submissions = [subs[0]];
         this.passes = passes;
         this.metadata = metadata;
     }
 
     getPass(pass) {
         return this.passes.find((p) => p.name === pass.name);
-    }
-
-    filesA() {
-        return this.subA.files;
-    }
-
-    filesB() {
-        return this.subB.files;
     }
 
     index() {

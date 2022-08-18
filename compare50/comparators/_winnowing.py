@@ -260,7 +260,7 @@ class Winnowing(ServerComparator):
                     fingerprints_a = {k for k in index_a.keys()}
                     fingerprints_b = {k.value for k in index_b.keys()}
                     common_fingerprints = fingerprints_a & fingerprints_b
-                    spans.extend([index_a[fp] for fp in common_fingerprints])
+                    spans.extend([next(iter(index_a[fp])) for fp in common_fingerprints])
     
             comparisons.append(SingleSourceComparison(
                 score.sub_a, score.sub_b, spans, list(ignored_spans)

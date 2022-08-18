@@ -14,7 +14,7 @@ class Cluster:
     def submissions_as_dict(self):
         return {sub.id: {
             "id": sub.id,
-            "path": str(sub.path),
+            "path": str(sub.path) if hasattr(sub, "path") else sub.submitter,
             "isArchive": sub.is_archive
         } for sub in self.submissions}
 

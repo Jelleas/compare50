@@ -85,10 +85,8 @@ function initRegionMap(match, pass) {
         return new RegionMap([]);
     }
 
-    const fileIdsInOrder = match
-        .filesA()
-        .concat(match.filesB())
-        .map((file) => file.id);
+    const files = match.submissions.map((s) => s.files).flat();
+    const fileIdsInOrder = files.map((file) => file.id);
 
     const spans = pass.spans
         .filter((span) => !span.ignored)

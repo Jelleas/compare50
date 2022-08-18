@@ -22,7 +22,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
                 height: "100%",
             }}
         >
-            {[match.subA, match.subB].map((sub, i) => (
+            {match.submissions.map((sub, i) => (
                 <div
                     key={`side_${i}`}
                     style={{ height: "100%", margin: 0, float: "left" }}

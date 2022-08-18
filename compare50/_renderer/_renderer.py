@@ -7,7 +7,7 @@ STATIC = pathlib.Path(pkg_resources.resource_filename("compare50._renderer", "st
 from typing import Dict, List, Tuple, Union, Any
 
 from ._cluster import Cluster
-from .. import _api, Compare50Result, Pass, Explanation, IdStore, Span, FileSubmission, File, Group
+from .. import _api, Compare50Result, Pass, Explanation, IdStore, Span, FileSubmission, File, Group, Submission
 
 import jinja2
 
@@ -140,13 +140,12 @@ def get_home_data(cluster: Cluster) -> Dict[str, Any]:
 
 def get_match_data(
     sub_a: FileSubmission,
-    sub_b: FileSubmission,
+    sub_b: Submission,
     results: List[Compare50Result],
     cluster: Cluster,
     metadata: Dict
 ) -> Dict[str, Any]:
     files_a = files_as_dict(sub_a)
-    files_b = files_as_dict(sub_b)
 
     span_id_store: IdStore[Span] = IdStore()
     group_id_store: IdStore[Group] = IdStore()
@@ -156,11 +155,14 @@ def get_match_data(
     match_data = {
         "METADATA": metadata,
         "SUB_A": files_a,
-        "SUB_B": files_b,
         "PASSES": passes,
         "SUBMISSIONS": cluster.submissions_as_dict(),
         "LINKS": cluster.links_as_dict()
     }
+
+    if (hasattr(sub_b, "files")):
+        files_b = files_as_dict(sub_b)
+        match_data["SUB_B"] = files_b
 
     return match_data
 

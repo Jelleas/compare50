@@ -306,6 +306,8 @@ class FingerprintSubmission(Submission):
 
     Represents a single submission consisting of only fingerprints. 
     """
+    _store: IdStore["FileSubmission"]
+
     submitter = attr.ib(cmp=False)
     version = attr.ib(cmp=False)
     slug = attr.ib(cmp=False)

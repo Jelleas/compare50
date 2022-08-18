@@ -308,44 +308,8 @@ def expand_patterns(patterns):
     """
     return list(itertools.chain.from_iterable(map(lambda x: glob.glob(x, recursive=True) or [x], patterns)))
 
-# @attr.s(slots=True, frozen=True)
-# class FingerprintSubmission(Submission):
-#     """
-#     :ivar fingerprints: A set of fingerprints generated earlier for this submission.
-#     :ivar id: integer that uniquely identifies this submission \
-#             (submissions with the same path will always have the same id).
 
-#     Represents a single submission consisting of only fingerprints. 
-#     """
-#     submitter = attr.ib(cmp=False)
-#     version = attr.ib(cmp=False)
-#     slug = attr.ib(cmp=False)
-#     fingerprints = attr.ib(cmp=False)
-#     is_archive = attr.ib(default=False, cmp=False)
-#     id = attr.ib(init=False)
 def main():
-    submission_factory = SubmissionFactory()
-    sub_a_path = "speller_full/carbo18"
-    sub_b_path = "speller_full/kjzhu9"
-
-    sub_a, sub_b = list(submission_factory.get_all([sub_a_path, sub_b_path], lambda tokens: tokens, False))
-
-    comparator = comparators.Winnowing(k=25, t=35)
-
-    fingerprints = []
-    for file in sub_b.files:
-        fingerprints.extend(comparator.fingerprint_for_compare(file))
-
-    fingerprint_sub_b = FingerprintSubmission(sub_b_path, 0, "foo/bar/slug", fingerprints, False)
-
-    score = Score(sub_a, fingerprint_sub_b, 1)
-
-    comparison = comparator.compare_fingerprints([score], set())[0]
-
-    print(comparison.matching_spans)
-
-
-def main2():
     submission_factory = SubmissionFactory()
 
     parser = ArgParser(prog="compare50")

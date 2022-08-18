@@ -19,7 +19,6 @@ function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
     };
 
     const match = similarities.match;
-
     return (
         <>
             <ReactTooltip
@@ -74,8 +73,7 @@ function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
                 {isLoaded && (
                     <SideGraph
                         graph={graphData}
-                        subAId={match.subA.id}
-                        subBId={match.subB.id}
+                        submissionIds={match.submissions.map((s) => s.id)}
                     />
                 )}
             </div>
@@ -83,7 +81,7 @@ function SideBar({ isLoaded, similarities, dispatchSimilarities, graphData }) {
     );
 }
 
-function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
+function SideGraph({ graph = null, submissionIds = [] }) {
     const style = {
         margin: "auto",
         marginBottom: ".5em",
@@ -91,14 +89,19 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
         width: "90%",
     };
 
-    const nodeA = graph.nodes.find((node) => node.id === subAId);
-    const nodeB = graph.nodes.find((node) => node.id === subBId);
+    // const nodeA = graph.nodes.find((node) => node.id === subAId);
+    // const nodeB = graph.nodes.find((node) => node.id === subBId);
+
+    const nodes = graph.nodes.filter((node) => submissionIds.includes(node.id));
 
     // color the nodes of this match orange
-    nodeA.color = "#ffb74d";
-    nodeB.color = "#ffb74d";
+    nodes.forEach((n) => (n.color = "#ffb74d"));
 
-    // Compute the distance from every sub to subA and subB using Dijkstra's algorithm
+    // // color the nodes of this match orange
+    // nodeA.color = "#ffb74d";
+    // nodeB.color = "#ffb74d";
+
+    // Compute the distance from every sub to the submissions of this match using Dijkstra's algorithm
     const distanceMap = useMemo(() => {
         const directDistanceMap = {};
         graph.nodes.forEach((node) => (directDistanceMap[node.id] = []));
@@ -112,8 +115,7 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
 
         // map of node to distance for which the shortest distance is still unknown
         const potentialDistanceMap = {};
-        potentialDistanceMap[subAId] = 0;
-        potentialDistanceMap[subBId] = 0;
+        submissionIds.forEach((subId) => (potentialDistanceMap[subId] = 0));
 
         // while there's any node to explore
         while (Object.keys(potentialDistanceMap).length > 0) {
@@ -144,7 +146,7 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
             });
         }
         return distanceMap;
-    }, [graph, subAId, subBId]);
+    }, [graph, submissionIds]);
 
     const getLink = (id) => {
         const links = graph.links.filter(
@@ -165,8 +167,8 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
     };
 
     const [highlighted, setHighlighted] = useState({
-        nodes: [nodeA.id, nodeB.id],
-        group: nodeA.group,
+        nodes: nodes.map((n) => n.id),
+        group: nodes[0].group,
     });
 
     return (
@@ -179,7 +181,7 @@ function SideGraph({ graph = null, subAId = -1, subBId = -2 }) {
                     highlighted={highlighted}
                     callbacks={{
                         select: ({ id, group }) => {
-                            if (nodeA.id === id || nodeB.id === id) return;
+                            if (nodes.map((n) => n.id).includes(id)) return;
                             window.location.href =
                                 "match_" + getLink(id).link_index + ".html";
                         },
