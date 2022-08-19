@@ -213,24 +213,7 @@ class SourcedFingerprint:
     """A Fingerprint with a source (a Span)."""
     value = attr.ib()
     span: "Span" = attr.ib(cmp=False, hash=False)
-
-
-class Submission(metaclass=abc.ABCMeta):
-    """Abstract base class for Submissions."""
-    @property
-    @abc.abstractmethod
-    def id(self) -> int:
-        pass
-
-    @property
-    @abc.abstractmethod
-    def is_archive(self) -> bool:
-        pass
-
-    @abc.abstractclassmethod
-    def get(cls, id: int) -> "Submission":
-        pass
-    
+   
 
 @attr.s(slots=True)
 class Preprocessor:
@@ -255,9 +238,30 @@ def _to_path_tuple(fs: Iterable[str]) -> Tuple[pathlib.Path, ...]:
     return tuple(map(pathlib.Path, fs))
 
 
+
 @cached_class(
-    ("_store", lambda: IdStore(key=lambda sub: (sub.path, sub.files, sub.large_files, sub.undecodable_files)))
+    ("_store", lambda: IdStore(key=lambda sub: sub._key))
 )
+class Submission(metaclass=abc.ABCMeta):
+    """Abstract base class for Submissions."""
+    _store: IdStore["FileSubmission"]
+
+    @property
+    @abc.abstractmethod
+    def id(self) -> int:
+        pass
+
+    @property
+    @abc.abstractmethod
+    def is_archive(self) -> bool:
+        pass
+
+    @classmethod
+    def get(cls, id):
+        """Retrieve submission corresponding to specified id"""
+        return cls._store.objects[id]
+ 
+
 @attr.s(slots=True, frozen=True)
 class FileSubmission(Submission):
     """
@@ -271,8 +275,6 @@ class FileSubmission(Submission):
     Represents a single submission. Submissions may either be single files or
     directories containing many files.
     """
-    _store: IdStore["FileSubmission"]
-
     path = attr.ib(converter=pathlib.Path, cmp=False)
     files: List["File"] = attr.ib(cmp=False)
     large_files = attr.ib(factory=tuple, converter=_to_path_tuple, cmp=False, repr=False)
@@ -280,24 +282,18 @@ class FileSubmission(Submission):
     preprocessor: Preprocessor = attr.ib(default=Preprocessor([]), cmp=False, repr=False)
     is_archive: bool = attr.ib(default=False, cmp=False)
     id: int = attr.ib(init=False)
+    _key: Tuple = attr.ib(init=False, cmp=False)
 
     def __attrs_post_init__(self):
         object.__setattr__(self, "files", tuple(
             [File(pathlib.Path(path), self) for path in self.files]))
+        object.__setattr__(self, "_key", (self.path, self.files, self.large_files, self.undecodable_files))
         object.__setattr__(self, "id", FileSubmission._store[self])
 
     def __iter__(self) -> Iterator["File"]:
         return iter(self.files)
 
-    @classmethod
-    def get(cls, id):
-        """Retrieve submission corresponding to specified id"""
-        return cls._store.objects[id]
 
-
-@cached_class(
-    ("_store", lambda: IdStore(key=lambda sub: (sub.submitter, sub.version, sub.slug)))
-)
 @attr.s(slots=True, frozen=True)
 class FingerprintSubmission(Submission):
     """
@@ -307,26 +303,21 @@ class FingerprintSubmission(Submission):
 
     Represents a single submission consisting of only fingerprints. 
     """
-    _store: IdStore["FileSubmission"]
-
     submitter = attr.ib(cmp=False)
     version = attr.ib(cmp=False)
     slug = attr.ib(cmp=False)
     fingerprints = attr.ib(cmp=False)
     is_archive = attr.ib(default=False, cmp=False)
     id = attr.ib(init=False)
+    _key: Tuple = attr.ib(init=False, cmp=False)
 
     def __attrs_post_init__(self):
+        object.__setattr__(self, "_key", (self.submitter, self.version, self.slug))
         object.__setattr__(self, "id", FingerprintSubmission._store[self])
         object.__setattr__(self, "fingerprints", [Fingerprint(fingerprint, self.id) for fingerprint in self.fingerprints])
 
     def __iter__(self):
         return iter(self.fingerprints)
-
-    @classmethod
-    def get(cls, id):
-        """Retrieve submission corresponding to specified id"""
-        return cls._store.objects[id]
 
 
 @cached_class(

@@ -404,7 +404,7 @@ def main():
 
     output_dest = args.output.parent / (args.output.name + '.html') if args.bundled else args.output
 
-    if output_dest:
+    if output_dest.exists():
         try:
             resp = input(f"File path {termcolor.colored(output_dest, None, attrs=['underline'])}"
                           " already exists. Do you want to remove it? [Y/n] ")
