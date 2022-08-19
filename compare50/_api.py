@@ -173,7 +173,7 @@ def get_single_source_results(
         comp = subs_to_comparison[(score.sub_a, score.sub_b)]
         matching_spans = _flatten_spans(comp.matching_spans)
         ignored_spans = _flatten_spans(comp.ignored_spans)
-        groups = [Group([s]) for s in matching_spans]
+        groups = [Group([s]) for s in matching_spans]  # type: ignore
         
         results.append(Compare50Result(
             pass_,
