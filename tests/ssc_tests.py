@@ -4,6 +4,7 @@ import os
 
 import compare50._data as data
 import compare50._api as api
+import compare50._renderer as renderer
 from compare50.comparators import Winnowing
 
 class TestSingleSourceComparison(unittest.TestCase):
@@ -13,7 +14,7 @@ class TestSingleSourceComparison(unittest.TestCase):
         os.chdir(self.working_directory.name)
 
         self.pass_ = data.Pass._get("structure")
-        self.comparator = Winnowing(k=2, t=3)
+        self.comparator = Winnowing(k=2, t=2)
 
         self.content_a = "def foo():\n"\
                     "    print('qux')\n"
@@ -50,8 +51,8 @@ class TestSingleSourceComparison(unittest.TestCase):
         groups = [data.Group((span, )) for span in comparison.matching_spans]
         result = data.Compare50Result(self.pass_, score, groups, comparison.ignored_spans)
 
-        import compare50._renderer as r
-        r.render({self.pass_: [result]}, dest=".")
+        with api.init_progress_bar("Rendering", disable=True):
+            renderer.render({self.pass_: [result]}, dest=".")
 
 if __name__ == '__main__':
     unittest.main()
