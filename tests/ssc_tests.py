@@ -49,8 +49,7 @@ class TestSingleSourceComparison(unittest.TestCase):
     def test_render(self):
         score = data.Score(self.file_sub, self.fingerprint_sub, 1)
         comparison: data.SingleSourceComparison = self.comparator.compare_fingerprints([score], set())[0]
-        groups = [data.Group((span, )) for span in comparison.matching_spans]
-        result = data.Compare50Result(self.pass_, score, groups, comparison.ignored_spans)
+        result = api.get_single_source_results(self.pass_, [comparison], [score])[0]
 
         with api.init_progress_bar("Rendering", disable=True):
             renderer.render({self.pass_: [result]}, dest=".")
