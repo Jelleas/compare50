@@ -209,8 +209,8 @@ class Winnowing(ServerComparator):
         class FileCache:
             # List of tokens (and their corresponding indices) that can be matched.
             # Name is slightly misleading since it is a list of (token, index) pairs
-            unignored_tokens = attr.ib(factory=list)
-            ignored_spans = attr.ib(factory=list)
+            unignored_tokens: List[Tuple[List[Token], CompareIndex]] = attr.ib(factory=list)
+            ignored_spans: List[Span] = attr.ib(factory=list)
 
         # Build a cache for each file submission
         file_cache = {}
@@ -235,11 +235,11 @@ class Winnowing(ServerComparator):
 
         # Build a cache for each fingerprint submission
         fingerprint_sub_cache = {}
-        for sub in {s.sub_b for s in scores}:
+        for fingerprint_sub in {s.sub_b for s in scores}:
             index = CompareIndex(self.k)
-            for fp in sub.fingerprints:
+            for fp in fingerprint_sub.fingerprints:
                 index.include_fingerprint(fp)
-            fingerprint_sub_cache[sub] = index
+            fingerprint_sub_cache[fingerprint_sub] = index
 
         # Compare the submissions
         comparisons = []
@@ -363,10 +363,6 @@ class ScoreIndex(Index):
         super().include(file, tokens)
         self._max_id = max(self._max_id, file.submission.id)
 
-    def include_fingerprint(self, fingerprint:Fingerprint):
-        super().include_fingerprint(fingerprint)
-        self._max_id = max(self._max_id, fingerprint.submission_id)
-
     def include_all(self, other):
         super().include_all(other)
         self._max_id = max(self._max_id, other._max_id)
@@ -374,6 +370,7 @@ class ScoreIndex(Index):
     def include_fingerprint(self, fingerprint:Fingerprint):
         """Add a fingerprint to the index."""
         self._index[fingerprint.value].add(fingerprint.submission_id)
+        self._max_id = max(self._max_id, fingerprint.submission_id)
 
     def compare(self, other, score=lambda _: 1, store=FileSubmission):
         # Keep a self.max_file_id by other.max_file_id matrix for counting score
