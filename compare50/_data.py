@@ -256,6 +256,11 @@ class Submission(metaclass=abc.ABCMeta):
     def is_archive(self) -> bool:
         pass
 
+    @property
+    @abc.abstractmethod
+    def _key(self) -> Hashable:
+        pass
+
     @classmethod
     def get(cls, id):
         """Retrieve submission corresponding to specified id"""

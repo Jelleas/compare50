@@ -15,6 +15,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
 
     return (
         <Split
+            key={match.submissions.map((sub) => sub.id)}
             sizes={splitSizes}
             gutterSize={10}
             gutterAlign="center"
@@ -28,7 +29,7 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
         >
             {match.submissions.map((sub, i) => (
                 <div
-                    key={`side_${i}`}
+                    key={sub.id}
                     style={{ height: "100%", margin: 0, float: "left" }}
                 >
                     <SubmissionView
