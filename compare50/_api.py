@@ -164,17 +164,17 @@ def get_single_source_results(
     scores: Iterable[Score[FileSubmission, FingerprintSubmission]]
 ) -> List[Compare50Result]:
 
-    subs_to_score: Dict[Tuple[FileSubmission, FingerprintSubmission], Score] = {}
-    for score in scores:
-        subs_to_score[(score.sub_a, score.sub_b)] = score
+    subs_to_comparison: Dict[Tuple[FileSubmission, FingerprintSubmission], SingleSourceComparison] = {}
+    for comp in comparisons:
+        subs_to_comparison[(comp.sub_a, comp.sub_b)] = comp
 
     results: List[Compare50Result] = []
-    for comp in comparisons:
+    for score in scores:
+        comp = subs_to_comparison[(score.sub_a, score.sub_b)]
         matching_spans = _flatten_spans(comp.matching_spans)
         ignored_spans = _flatten_spans(comp.ignored_spans)
         groups = [Group([s]) for s in matching_spans]
-        score = subs_to_score[(comp.sub_a, comp.sub_b)]
-
+        
         results.append(Compare50Result(
             pass_,
             score,
