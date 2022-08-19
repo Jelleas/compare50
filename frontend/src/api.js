@@ -97,7 +97,7 @@ class API {
 
 class Match {
     constructor(subs, passes, metadata) {
-        this.submissions = [subs[0]];
+        this.submissions = subs;
         this.passes = passes;
         this.metadata = metadata;
     }
