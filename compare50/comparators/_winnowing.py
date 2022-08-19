@@ -253,12 +253,13 @@ class Winnowing(ServerComparator):
 
             index_b = fingerprint_sub_cache[score.sub_b]
 
+
             # Compare each file of a with the fingerprint submission (sub_b)
             spans = []
             for file in score.sub_a.files:
                 for tokens_a, index_a in file_cache[file].unignored_tokens:
                     fingerprints_a = {k for k in index_a.keys()}
-                    fingerprints_b = {k.value for k in index_b.keys()}
+                    fingerprints_b = {k for k in index_b.keys()}
                     common_fingerprints = fingerprints_a & fingerprints_b
                     spans.extend([next(iter(index_a[fp])) for fp in common_fingerprints])
     

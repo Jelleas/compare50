@@ -118,6 +118,10 @@ def get_results(
     * Any spans in the comparison are extended to maximum matching size.
     * All spans that were removed by a preprocessor are found again and properly ignored.
     """
+
+    if not comparisons:
+        return []
+
     missing_spans_cache: Dict[File, List[Span]] = {}
     sub_match_to_ignored_spans: Dict[Tuple[FileSubmission, FileSubmission], List[Span]] = {}
     sub_match_to_groups: Dict[Tuple[FileSubmission, FileSubmission], List[Group]] = {}
