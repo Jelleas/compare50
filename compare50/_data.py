@@ -135,6 +135,19 @@ class ServerComparator(Comparator):
         pass
 
     @abc.abstractmethod
+    def compare_fingerprints(
+        self,
+        scores: List["Score[FileSubmission, FingerprintSubmission]"],
+        ignored_fingerprints: Iterable["Fingerprint"]
+    ) -> List["SingleSourceComparison"]:
+        """
+        Given a list of scores and a list of distro files, perform an in-depth
+        comparison of each submission pair and return a corresponding list of
+        :class:`compare50.Comparison`\ s
+        """
+        pass
+
+    @abc.abstractmethod
     def fingerprint_for_score(self, file: "File") -> List["Fingerprint"]:
         pass
 
@@ -142,18 +155,6 @@ class ServerComparator(Comparator):
     def fingerprint_for_compare(self, file: "File") -> List["SourcedFingerprint"]:
         pass
 
-    @abc.abstractmethod
-    def compare_fingerprints(
-        self,
-        scores: List["Score[FileSubmission, FingerprintSubmission]"],
-        ignored_fingerprints: Iterable["Fingerprint"]
-    ) -> List["Comparison[FileSubmission, FingerprintSubmission]"]:
-        """
-        Given a list of scores and a list of distro files, perform an in-depth
-        comparison of each submission pair and return a corresponding list of
-        :class:`compare50.Comparison`\ s
-        """
-        pass
 
 
 class Explainer(metaclass=abc.ABCMeta):

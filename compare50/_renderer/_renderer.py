@@ -160,7 +160,7 @@ def get_match_data(
         "LINKS": cluster.links_as_dict()
     }
 
-    if (hasattr(sub_b, "files")):
+    if isinstance(sub_b, FileSubmission):
         files_b = files_as_dict(sub_b)
         match_data["SUB_B"] = files_b
 

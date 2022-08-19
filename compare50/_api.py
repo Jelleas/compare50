@@ -22,7 +22,8 @@ from ._data import (
     Fingerprint,
     Comparison,
     SourcedFingerprint,
-    ServerComparator
+    ServerComparator,
+    SingleSourceComparison
 )
 
 
@@ -153,6 +154,33 @@ def get_results(
                                        score,
                                        sub_match_to_groups.get(sub_match, []),
                                        sub_match_to_ignored_spans[sub_match]))
+
+    return results
+
+
+def get_single_source_results(
+    pass_: Pass,
+    comparisons: Iterable[SingleSourceComparison],
+    scores: Iterable[Score[FileSubmission, FingerprintSubmission]]
+) -> List[Compare50Result]:
+
+    subs_to_score: Dict[Tuple[FileSubmission, FingerprintSubmission], Score] = {}
+    for score in scores:
+        subs_to_score[(score.sub_a, score.sub_b)] = score
+
+    results: List[Compare50Result] = []
+    for comp in comparisons:
+        matching_spans = _flatten_spans(comp.matching_spans)
+        ignored_spans = _flatten_spans(comp.ignored_spans)
+        groups = [Group([s]) for s in matching_spans]
+        score = subs_to_score[(comp.sub_a, comp.sub_b)]
+
+        results.append(Compare50Result(
+            pass_,
+            score,
+            groups,
+            ignored_spans
+        ))
 
     return results
 

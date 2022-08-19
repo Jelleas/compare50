@@ -4,6 +4,7 @@ import os
 
 import compare50._data as data
 import compare50._api as api
+import compare50._renderer as renderer
 from compare50.comparators import Winnowing
 
 class TestSingleSourceComparison(unittest.TestCase):
@@ -13,7 +14,7 @@ class TestSingleSourceComparison(unittest.TestCase):
         os.chdir(self.working_directory.name)
 
         self.pass_ = data.Pass._get("structure")
-        self.comparator = Winnowing(k=2, t=3)
+        self.comparator = Winnowing(k=2, t=2)
 
         self.content_a = "def foo():\n"\
                     "    print('qux')\n"
@@ -31,8 +32,9 @@ class TestSingleSourceComparison(unittest.TestCase):
         fingerprints = []
         for file in temp_sub.files:
             fingerprints.extend(self.comparator.fingerprint_for_compare(file))
-
-        self.fingerprint_sub = data.FingerprintSubmission("b", 0, "bar/slug", fingerprints)
+        
+        raw_fingerprints = [fp.value for fp in fingerprints]
+        self.fingerprint_sub = data.FingerprintSubmission("b", 0, "bar/slug", raw_fingerprints)
 
     def tearDown(self):
         self.working_directory.cleanup()
@@ -42,16 +44,15 @@ class TestSingleSourceComparison(unittest.TestCase):
         score = data.Score(self.file_sub, self.fingerprint_sub, 1)
         comparison: data.SingleSourceComparison = self.comparator.compare_fingerprints([score], set())[0]
 
-        self.assertEqual(len(comparison.matching_spans), 12)
+        self.assertGreater(len(comparison.matching_spans), 0)
 
     def test_render(self):
         score = data.Score(self.file_sub, self.fingerprint_sub, 1)
         comparison: data.SingleSourceComparison = self.comparator.compare_fingerprints([score], set())[0]
-        groups = [data.Group((span, )) for span in comparison.matching_spans]
-        result = data.Compare50Result(self.pass_, score, groups, comparison.ignored_spans)
+        result = api.get_single_source_results(self.pass_, [comparison], [score])[0]
 
-        import compare50._renderer as r
-        r.render({self.pass_: [result]}, dest=".")
+        with api.init_progress_bar("Rendering", disable=True):
+            renderer.render({self.pass_: [result]}, dest=".")
 
 if __name__ == '__main__':
     unittest.main()

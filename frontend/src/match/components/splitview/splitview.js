@@ -9,9 +9,13 @@ function SplitView({ settings, similarities, dispatchSimilarities }) {
     const [isInteractionBlocked, setIsInteractionBlocked] = useState(false);
     const match = similarities.match;
 
+    const splitSizes = match.submissions.map(
+        () => 100 / match.submissions.length
+    );
+
     return (
         <Split
-            sizes={[50, 50]}
+            sizes={splitSizes}
             gutterSize={10}
             gutterAlign="center"
             snapOffset={30}

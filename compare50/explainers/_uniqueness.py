@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Dict, Set, Tuple, Union
+from typing import List, Dict, Set, Union
 import math
 
 from .. import ServerComparator, Error, Comparator, Explainer, Explanation, Compare50Result, Span, FileSubmission, File, SourcedFingerprint
