@@ -32,8 +32,9 @@ class TestSingleSourceComparison(unittest.TestCase):
         fingerprints = []
         for file in temp_sub.files:
             fingerprints.extend(self.comparator.fingerprint_for_compare(file))
-
-        self.fingerprint_sub = data.FingerprintSubmission("b", 0, "bar/slug", fingerprints)
+        
+        raw_fingerprints = [fp.value for fp in fingerprints]
+        self.fingerprint_sub = data.FingerprintSubmission("b", 0, "bar/slug", raw_fingerprints)
 
     def tearDown(self):
         self.working_directory.cleanup()

@@ -238,7 +238,6 @@ class Winnowing(ServerComparator):
         for sub in {s.sub_b for s in scores}:
             index = CompareIndex(self.k)
             for fp in sub.fingerprints:
-                # TODO: implement include_fingerprint for CompareIndex
                 index.include_fingerprint(fp)
             fingerprint_sub_cache[sub] = index
 
@@ -257,8 +256,8 @@ class Winnowing(ServerComparator):
             spans = []
             for file in score.sub_a.files:
                 for tokens_a, index_a in file_cache[file].unignored_tokens:
-                    fingerprints_a = {k for k in index_a.keys()}
-                    fingerprints_b = {k.value for k in index_b.keys()}
+                    fingerprints_a = set(index_a.keys())
+                    fingerprints_b = set(index_b.keys())
                     common_fingerprints = fingerprints_a & fingerprints_b
                     spans.extend([next(iter(index_a[fp])) for fp in common_fingerprints])
     
@@ -309,10 +308,6 @@ class Index(abc.ABC):
         for hash, val in self.fingerprint(file, tokens):
             self._index[hash].add(val)
 
-    def include_fingerprint(self, fingerprint:Fingerprint):
-        """Add a fingerprint to the index."""
-        self._index[fingerprint.value].add(fingerprint.submission_id)
-
     def include_all(self, other):
         """Add all fingerprints from another index into this one."""
         for hash, vals in other._index.items():
@@ -346,6 +341,11 @@ class Index(abc.ABC):
     def fingerprint(self, file, tokens=None):
         pass
 
+    @abc.abstractmethod
+    def include_fingerprint(self, fingerprint:Fingerprint):
+        """Add a fingerprint to the index."""
+        pass
+
     def __bool__(self):
         return bool(self._index)
 
@@ -370,6 +370,10 @@ class ScoreIndex(Index):
     def include_all(self, other):
         super().include_all(other)
         self._max_id = max(self._max_id, other._max_id)
+
+    def include_fingerprint(self, fingerprint:Fingerprint):
+        """Add a fingerprint to the index."""
+        self._index[fingerprint.value].add(fingerprint.submission_id)
 
     def compare(self, other, score=lambda _: 1, store=FileSubmission):
         # Keep a self.max_file_id by other.max_file_id matrix for counting score
@@ -522,3 +526,7 @@ class CompareIndex(Index):
             fingerprints.append((hash_, Span(file, start, end)))
 
         return fingerprints
+
+    def include_fingerprint(self, fingerprint:Fingerprint):
+        """Add a fingerprint to the index."""
+        self._index[fingerprint.value].add(None)
